@@ -64,6 +64,7 @@ export interface Enzyme {
   name: string;
   dosage_g_per_ton: number; // The actual dosage used in the mix
   standard_dosage_g_per_ton: number; // The dosage for which the matrix is defined
+  max_effective_dosage_g_per_ton: number; // The dosage at which the effect plateaus
   Price_USD_per_ton: number;
   matrix: Partial<Record<keyof Omit<Ingredient, 'id' | 'Name' | 'Inclusion_pct' | 'Price_USD_per_ton' | 'description' | 'category'>, number>>;
 }
