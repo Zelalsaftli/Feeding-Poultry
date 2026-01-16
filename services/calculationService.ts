@@ -34,11 +34,14 @@ export const calculateMixAnalysis = (ingredients: Ingredient[], enzymes: Enzyme[
   const activeEnzymes = enzymes.filter(e => e.dosage_g_per_ton > 0);
   activeEnzymes.forEach(enzyme => {
     const standardDosage = enzyme.standard_dosage_g_per_ton;
+    const maxEffectiveDosage = enzyme.max_effective_dosage_g_per_ton;
 
-    // Calculate the contribution ratio based on the actual dosage vs. the standard dosage.
-    // If standard dosage is not set or is zero, there's no basis for calculation, so the contribution is zero.
+    // The dosage for calculation is the user-defined dosage, but capped at the max effective dosage to simulate a plateau.
+    const effectiveDosage = Math.min(enzyme.dosage_g_per_ton || 0, maxEffectiveDosage);
+
+    // Calculate the contribution ratio based on the effective dosage vs. the standard dosage.
     const dosageRatio = standardDosage > 0 
-      ? (enzyme.dosage_g_per_ton || 0) / standardDosage 
+      ? effectiveDosage / standardDosage 
       : 0;
       
     if (dosageRatio > 0) {

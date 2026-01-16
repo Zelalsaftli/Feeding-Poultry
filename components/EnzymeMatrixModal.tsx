@@ -23,12 +23,14 @@ const createStringifiedMatrix = (matrix: Enzyme['matrix']): MatrixState => {
 const EnzymeMatrixModal: React.FC<EnzymeMatrixModalProps> = ({ enzyme, onSave, onClose }) => {
   const [editedName, setEditedName] = useState(enzyme.name);
   const [standardDosage, setStandardDosage] = useState(String(enzyme.standard_dosage_g_per_ton));
+  const [maxEffectiveDosage, setMaxEffectiveDosage] = useState(String(enzyme.max_effective_dosage_g_per_ton));
   const [price, setPrice] = useState(String(enzyme.Price_USD_per_ton || 0));
   const [matrixState, setMatrixState] = useState<MatrixState>(createStringifiedMatrix(enzyme.matrix));
 
   useEffect(() => {
     setEditedName(enzyme.name);
     setStandardDosage(String(enzyme.standard_dosage_g_per_ton));
+    setMaxEffectiveDosage(String(enzyme.max_effective_dosage_g_per_ton));
     setPrice(String(enzyme.Price_USD_per_ton || 0));
     setMatrixState(createStringifiedMatrix(enzyme.matrix));
   }, [enzyme]);
@@ -58,6 +60,11 @@ const EnzymeMatrixModal: React.FC<EnzymeMatrixModalProps> = ({ enzyme, onSave, o
         numericStandardDosage = 100; // Fallback to a safe default
     }
 
+    let numericMaxEffectiveDosage = parseFloat(maxEffectiveDosage);
+    if(isNaN(numericMaxEffectiveDosage) || numericMaxEffectiveDosage < numericStandardDosage) {
+        numericMaxEffectiveDosage = numericStandardDosage; 
+    }
+
     let numericPrice = parseFloat(price);
     if (isNaN(numericPrice)) {
         numericPrice = 0;
@@ -67,6 +74,7 @@ const EnzymeMatrixModal: React.FC<EnzymeMatrixModalProps> = ({ enzyme, onSave, o
         ...enzyme, 
         name: editedName, 
         standard_dosage_g_per_ton: numericStandardDosage,
+        max_effective_dosage_g_per_ton: numericMaxEffectiveDosage,
         Price_USD_per_ton: numericPrice,
         matrix: cleanedMatrix 
     });
@@ -84,7 +92,7 @@ const EnzymeMatrixModal: React.FC<EnzymeMatrixModalProps> = ({ enzyme, onSave, o
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4 mb-4">
             <div>
                 <label className="block text-sm font-medium text-gray-700">Enzyme Name</label>
                 <input
@@ -105,6 +113,16 @@ const EnzymeMatrixModal: React.FC<EnzymeMatrixModalProps> = ({ enzyme, onSave, o
                 />
             </div>
             <div>
+                 <label className="block text-sm font-medium text-gray-700">Max Effective Dosage (g/ton)</label>
+                 <input
+                    type="text"
+                    inputMode="decimal"
+                    value={maxEffectiveDosage}
+                    onChange={(e) => setMaxEffectiveDosage(e.target.value)}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                />
+            </div>
+            <div>
                  <label className="block text-sm font-medium text-gray-700">Price ($/ton)</label>
                  <input
                     type="text"
@@ -119,7 +137,7 @@ const EnzymeMatrixModal: React.FC<EnzymeMatrixModalProps> = ({ enzyme, onSave, o
         <div className="border-t my-4"></div>
         
         <p className="text-sm text-gray-600 mb-4 bg-gray-100 p-3 rounded-md">
-          <b>Instructions:</b> Enter the nutrient values the enzyme adds when using the <b>Standard Dosage</b> specified above. The application will calculate the actual contribution based on the dosage you set on the main input screen.
+          <b>Instructions:</b> Enter the nutrient values this enzyme adds at its <b>Standard Dosage</b>. The nutrient release will be capped at the <b>Max Effective Dosage</b> to ensure realistic calculations.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
