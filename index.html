@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Poultry Feed Formulation App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+      body {
+        font-family: 'Roboto', sans-serif;
+      }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        .print-only {
+          display: block !important;
+        }
+        .print-body, body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+      .print-only {
+        display: none;
+      }
+      input[type="text"][inputMode="decimal"] {
+        text-align: center;
+      }
+      /* Animation styles */
+      .page-container {
+        animation-duration: 0.3s;
+        animation-fill-mode: forwards;
+        animation-timing-function: ease-in-out;
+      }
+      .fade-in {
+        animation-name: fadeIn;
+      }
+      .fade-out {
+        animation-duration: 0.2s;
+        animation-name: fadeOut;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-15px);
+        }
+      }
+    </style>
+
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^18.3.1/",
+    "react": "https://esm.sh/react@^18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@^18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@^18.3.1"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/Feeding Poultry/assets/index-Bsdn1T3D.js"></script>
+  <link rel="stylesheet" crossorigin href="/Feeding Poultry/assets/index-C_wksObm.css">
+</head>
+  <body class="bg-gray-50 text-gray-800">
+    <div id="root"></div>
+</body>
+</html>
