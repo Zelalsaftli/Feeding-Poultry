@@ -25,8 +25,8 @@ export const calculateMixAnalysis = (ingredients: Ingredient[], enzymes: Enzyme[
 
   nutrientKeys.forEach(key => {
     const values = ingredients.map(ing => ing[key as keyof Ingredient] as number);
-    // بناءً على طلب المستخدم، يتم حساب قيم المغذيات على أساس خلطة إجمالية من 100 جزء.
-    // يتم حساب قيمة كل مغذي كمجموع مساهمات كل مكون (نسبة الإدراج * قيمة المغذي) / 100.
+    // The value of each nutrient is calculated as the sum of the contributions of each ingredient
+    // (inclusion percentage * nutrient value), divided by 100 to get the final percentage in the mix.
     results[key] = sumProduct(inclusions, values) / 100;
   });
 

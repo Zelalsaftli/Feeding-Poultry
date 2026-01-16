@@ -45,12 +45,12 @@ const App: React.FC = () => {
   });
 
   const [masterIngredients, setMasterIngredients] = useState<Ingredient[]>(() => {
-    const saved = localStorage.getItem('masterIngredients');
+    const saved = localStorage.getItem('masterIngredients_en_v1');
     return saved ? JSON.parse(saved) : initialIngredients;
   });
 
   const [masterEnzymes, setMasterEnzymes] = useState<Enzyme[]>(() => {
-    const saved = localStorage.getItem('masterEnzymes');
+    const saved = localStorage.getItem('masterEnzymes_en_v1');
     return saved ? JSON.parse(saved) : initialEnzymes;
   });
   
@@ -71,11 +71,11 @@ const App: React.FC = () => {
   
   // Save settings to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('masterIngredients', JSON.stringify(masterIngredients));
+    localStorage.setItem('masterIngredients_en_v1', JSON.stringify(masterIngredients));
   }, [masterIngredients]);
 
   useEffect(() => {
-    localStorage.setItem('masterEnzymes', JSON.stringify(masterEnzymes));
+    localStorage.setItem('masterEnzymes_en_v1', JSON.stringify(masterEnzymes));
   }, [masterEnzymes]);
 
   useEffect(() => {

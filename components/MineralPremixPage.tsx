@@ -46,35 +46,35 @@ const EditableNumericCell: React.FC<{
 
 const MineralPremixPage: React.FC = () => {
     const [minerals, setMinerals] = useState<Mineral[]>(() => {
-        const saved = localStorage.getItem('mineralPremixData');
+        const saved = localStorage.getItem('mineralPremixData_en_v1');
         return saved ? JSON.parse(saved) : initialMineralsData;
     });
     const [premixInclusionRate, setPremixInclusionRate] = useState<number>(() => {
-        const saved = localStorage.getItem('mineralInclusionRate');
+        const saved = localStorage.getItem('mineralInclusionRate_en_v1');
         return saved ? JSON.parse(saved) : 2.5;
     });
     const [premixBatchSize, setPremixBatchSize] = useState<number>(() => {
-        const saved = localStorage.getItem('mineralBatchSize');
+        const saved = localStorage.getItem('mineralBatchSize_en_v1');
         return saved ? JSON.parse(saved) : 100;
     });
 
     useEffect(() => {
-        localStorage.setItem('mineralPremixData', JSON.stringify(minerals));
+        localStorage.setItem('mineralPremixData_en_v1', JSON.stringify(minerals));
     }, [minerals]);
 
     useEffect(() => {
-        localStorage.setItem('mineralInclusionRate', JSON.stringify(premixInclusionRate));
+        localStorage.setItem('mineralInclusionRate_en_v1', JSON.stringify(premixInclusionRate));
     }, [premixInclusionRate]);
 
     useEffect(() => {
-        localStorage.setItem('mineralBatchSize', JSON.stringify(premixBatchSize));
+        localStorage.setItem('mineralBatchSize_en_v1', JSON.stringify(premixBatchSize));
     }, [premixBatchSize]);
     
     const handleReset = () => {
         if (window.confirm('Are you sure you want to reset all mineral premix data to the application defaults?')) {
-            localStorage.removeItem('mineralPremixData');
-            localStorage.removeItem('mineralInclusionRate');
-            localStorage.removeItem('mineralBatchSize');
+            localStorage.removeItem('mineralPremixData_en_v1');
+            localStorage.removeItem('mineralInclusionRate_en_v1');
+            localStorage.removeItem('mineralBatchSize_en_v1');
             setMinerals(initialMineralsData);
             setPremixInclusionRate(2.5);
             setPremixBatchSize(100);
