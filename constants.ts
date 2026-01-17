@@ -1,11 +1,12 @@
-import type { Ingredient, RecommendationProfile, GrowthPhase, Enzyme, IngredientCategory, Vitamin, Mineral } from './types';
+import type { Ingredient, RecommendationProfile, GrowthPhase, IngredientCategory, Vitamin, Mineral } from './types';
 
-export const CATEGORY_NAMES_EN: Record<IngredientCategory, string> = {
+export const CATEGORY_NAMES: Record<IngredientCategory, string> = {
   Energy: 'Energy Sources',
   Protein: 'Protein Sources',
   AminoAcids: 'Amino Acids',
   MineralSupplements: 'Mineral Supplements',
   Medicated: 'Medicated Additives',
+  Enzymes: 'Enzymes',
   Other: 'Other Additives',
 };
 
@@ -15,11 +16,13 @@ export const CATEGORY_COLORS: Record<IngredientCategory, string> = {
   AminoAcids: 'bg-lime-500',
   MineralSupplements: 'bg-slate-400',
   Medicated: 'bg-rose-500',
+  Enzymes: 'bg-cyan-500',
   Other: 'bg-violet-500',
 };
 
 // This must match the Ingredient type in types.ts
-export const COLUMN_HEADERS_EN: Record<keyof Omit<Ingredient, 'id'>, string> = {
+// FIX: Exclude new enzyme-related properties from COLUMN_HEADERS type to resolve type error.
+export const COLUMN_HEADERS: Record<keyof Omit<Ingredient, 'id' | 'standard_dosage_g_per_ton' | 'matrix'>, string> = {
   Name: 'Name',
   description: 'Description',
   category: 'Category',
@@ -28,6 +31,7 @@ export const COLUMN_HEADERS_EN: Record<keyof Omit<Ingredient, 'id'>, string> = {
   ME_kcal_per_kg: 'ME (kcal/kg)',
   Ca_pct: 'Calcium %',
   avP_pct: 'Av. Phosphorus %',
+  phytateP_pct: 'Phytate P %',
   Na_pct: 'Sodium %',
   K_pct: 'Potassium %',
   Cl_pct: 'Chlorine %',
@@ -48,19 +52,20 @@ export const COLUMN_HEADERS_EN: Record<keyof Omit<Ingredient, 'id'>, string> = {
   Price_USD_per_ton: 'Price ($/ton)',
 };
 
-export const ANALYSIS_RESULTS_EN: Record<string, string> = {
-  totalCostPerTon: 'Total Feed Cost ($/ton)',
-  totalCostPer100kg: 'Total Feed Cost ($/100kg)',
+export const ANALYSIS_RESULTS: Record<string, string> = {
+  totalCostPerTon: 'Total Cost per Ton ($/ton)',
+  totalCostPer100kg: 'Total Cost per 100kg ($/100kg)',
   'nutrients.CP_pct': 'Crude Protein %',
   'nutrients.ME_kcal_per_kg': 'ME (kcal/kg)',
   'nutrients.MECP_Ratio': 'ME/CP Ratio',
   'nutrients.Ca_pct': 'Calcium %',
   'nutrients.avP_pct': 'Av. Phosphorus %',
-  'nutrients.CaAvP_Ratio': 'Ca/Av. P Ratio',
+  'nutrients.phytateP_pct': 'Phytate P %',
+  'nutrients.CaAvP_Ratio': 'Ca/Av.P Ratio',
   'nutrients.Na_pct': 'Sodium %',
   'nutrients.K_pct': 'Potassium %',
   'nutrients.Cl_pct': 'Chlorine %',
-  'nutrients.K_Cl_Na_Ratio': '(K+Cl)/Na',
+  'nutrients.K_Cl_Na_Ratio': '(K+Cl)/Na Ratio',
   'nutrients.dEB': 'dEB (mEq/kg)',
   'nutrients.Ash_pct': 'Ash %',
   'nutrients.Choline_mg_per_kg': 'Choline (mg/kg)',
@@ -84,6 +89,7 @@ export const NUTRIENT_UNITS: Record<string, { baseUnit: string; units: Record<st
   'nutrients.MECP_Ratio': { baseUnit: '', units: { '': 1 } },
   'nutrients.Ca_pct': { baseUnit: '%', units: { '%': 1, 'g/kg': 10 } },
   'nutrients.avP_pct': { baseUnit: '%', units: { '%': 1, 'g/kg': 10 } },
+  'nutrients.phytateP_pct': { baseUnit: '%', units: { '%': 1, 'g/kg': 10 } },
   'nutrients.CaAvP_Ratio': { baseUnit: '', units: { '': 1 } },
   'nutrients.Na_pct': { baseUnit: '%', units: { '%': 1, 'g/kg': 10, 'ppm': 10000 } },
   'nutrients.K_pct': { baseUnit: '%', units: { '%': 1, 'g/kg': 10, 'ppm': 10000 } },
@@ -125,7 +131,7 @@ export const convertValue = (
 };
 
 export const ROSS_308_RECOMMENDATIONS: Record<GrowthPhase, RecommendationProfile> = {
-  Starter: { // 0-10 days
+  'Starter': { // 0-10 days
     'nutrients.ME_kcal_per_kg': { min: 2925, max: 3025, unit: 'kcal/kg' },
     'nutrients.CP_pct': { min: 22.5, max: 23.5, unit: '%' },
     'nutrients.Lys_pct': { min: 1.32, max: 1.34, unit: '%' },
@@ -141,7 +147,7 @@ export const ROSS_308_RECOMMENDATIONS: Record<GrowthPhase, RecommendationProfile
     'nutrients.Choline_mg_per_kg': { min: 1700, max: Infinity, unit: 'mg/kg' },
     'nutrients.CaAvP_Ratio': { min: 1.8, max: 2.0, unit: '' },
   },
-  Grower: { // 11-24 days
+  'Grower': { // 11-24 days
     'nutrients.ME_kcal_per_kg': { min: 3000, max: 3100, unit: 'kcal/kg' },
     'nutrients.CP_pct': { min: 21.0, max: 22.0, unit: '%' },
     'nutrients.Lys_pct': { min: 1.18, max: 1.20, unit: '%' },
@@ -192,57 +198,131 @@ export const ROSS_308_RECOMMENDATIONS: Record<GrowthPhase, RecommendationProfile
 };
 
 export const initialIngredients: Ingredient[] = [
-    { id: 1, Name: 'Corn', category: 'Energy', Inclusion_pct: 0, CP_pct: 8.5, ME_kcal_per_kg: 3350, Ca_pct: 0.02, avP_pct: 0.05, Na_pct: 0.02, K_pct: 0.29, Cl_pct: 0.05, Lys_pct: 0.24, TSAA_pct: 0.34, Thr_pct: 0.29, Val_pct: 0.40, Ile_pct: 0.30, Leu_pct: 1.00, Arg_pct: 0.40, Try_pct: 0.07, Starch_pct: 62, CF_pct: 2.2, NDF_pct: 9.5, ADF_pct: 2.8, Ash_pct: 1.3, Choline_mg_per_kg: 550, Price_USD_per_ton: 250 },
-    { id: 2, Name: 'Soybean Meal 48%', category: 'Protein', Inclusion_pct: 0, CP_pct: 48.0, ME_kcal_per_kg: 2450, Ca_pct: 0.35, avP_pct: 0.30, Na_pct: 0.03, K_pct: 2.00, Cl_pct: 0.05, Lys_pct: 2.95, TSAA_pct: 1.40, Thr_pct: 1.90, Val_pct: 2.30, Ile_pct: 2.20, Leu_pct: 3.80, Arg_pct: 3.50, Try_pct: 0.65, Starch_pct: 2.5, CF_pct: 3.5, NDF_pct: 7.0, ADF_pct: 5.0, Ash_pct: 6.5, Choline_mg_per_kg: 2800, Price_USD_per_ton: 450 },
-    { id: 3, Name: 'Soybean Oil', category: 'Energy', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 8800, Ca_pct: 0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 1200 },
-    { id: 4, Name: 'Limestone', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 38.0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 98.0, Choline_mg_per_kg: 0, Price_USD_per_ton: 50 },
-    { id: 5, Name: 'Dicalcium Phosphate', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 22.0, avP_pct: 18.5, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 90.0, Choline_mg_per_kg: 0, Price_USD_per_ton: 700 },
-    { id: 6, Name: 'Salt (NaCl)', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, Na_pct: 39.0, K_pct: 0, Cl_pct: 60.0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 99.5, Choline_mg_per_kg: 0, Price_USD_per_ton: 80 },
-    { id: 7, Name: 'L-Lysine HCl', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 94.4, ME_kcal_per_kg: 3970, Ca_pct: 0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 19.3, Lys_pct: 78.8, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.5, Choline_mg_per_kg: 0, Price_USD_per_ton: 2000 },
-    { id: 8, Name: 'DL-Methionine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 58.1, ME_kcal_per_kg: 5960, Ca_pct: 0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 99.0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 3000 },
-    { id: 9, Name: 'L-Threonine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 74.0, ME_kcal_per_kg: 3500, Ca_pct: 0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 98.5, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 2500 },
-    { id: 10, Name: 'Choline Chloride 60%', category: 'Other', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 447000, Price_USD_per_ton: 1500 },
-];
-
-export const initialEnzymes: Enzyme[] = [
-  {
-    id: 'phytase_1',
-    name: 'Phytase 5000 FTU/g',
-    dosage_g_per_ton: 0,
-    standard_dosage_g_per_ton: 100,
-    max_effective_dosage_g_per_ton: 150,
-    Price_USD_per_ton: 15000,
-    matrix: {
-      avP_pct: 0.15,
-      Ca_pct: 0.12,
-      ME_kcal_per_kg: 50,
-      CP_pct: 0.8,
+    // Energy Sources
+    { id: 1, Name: 'Corn', category: 'Energy', Inclusion_pct: 0, CP_pct: 8.5, ME_kcal_per_kg: 3350, Ca_pct: 0.02, avP_pct: 0.05, phytateP_pct: 0.19, Na_pct: 0.02, K_pct: 0.29, Cl_pct: 0.05, Lys_pct: 0.24, TSAA_pct: 0.34, Thr_pct: 0.29, Val_pct: 0.40, Ile_pct: 0.30, Leu_pct: 1.00, Arg_pct: 0.40, Try_pct: 0.07, Starch_pct: 62, CF_pct: 2.2, NDF_pct: 9.5, ADF_pct: 2.8, Ash_pct: 1.3, Choline_mg_per_kg: 550, Price_USD_per_ton: 250 },
+    { id: 2, Name: 'Wheat', category: 'Energy', Inclusion_pct: 0, CP_pct: 11.5, ME_kcal_per_kg: 3150, Ca_pct: 0.05, avP_pct: 0.08, phytateP_pct: 0.24, Na_pct: 0.02, K_pct: 0.45, Cl_pct: 0.07, Lys_pct: 0.32, TSAA_pct: 0.40, Thr_pct: 0.33, Val_pct: 0.48, Ile_pct: 0.38, Leu_pct: 0.75, Arg_pct: 0.55, Try_pct: 0.13, Starch_pct: 60, CF_pct: 2.8, NDF_pct: 11.5, ADF_pct: 3.5, Ash_pct: 1.8, Choline_mg_per_kg: 900, Price_USD_per_ton: 280 },
+    { id: 3, Name: 'Barley', category: 'Energy', Inclusion_pct: 0, CP_pct: 10.5, ME_kcal_per_kg: 2950, Ca_pct: 0.06, avP_pct: 0.12, phytateP_pct: 0.23, Na_pct: 0.02, K_pct: 0.50, Cl_pct: 0.15, Lys_pct: 0.35, TSAA_pct: 0.38, Thr_pct: 0.34, Val_pct: 0.50, Ile_pct: 0.37, Leu_pct: 0.70, Arg_pct: 0.52, Try_pct: 0.13, Starch_pct: 55, CF_pct: 5.5, NDF_pct: 20, ADF_pct: 6, Ash_pct: 2.5, Choline_mg_per_kg: 1000, Price_USD_per_ton: 240 },
+    { id: 4, Name: 'Soybean Oil', category: 'Energy', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 8800, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 1200 },
+    // Protein Sources
+    { id: 5, Name: 'Soybean Meal 48%', category: 'Protein', Inclusion_pct: 0, CP_pct: 48.0, ME_kcal_per_kg: 2450, Ca_pct: 0.35, avP_pct: 0.30, phytateP_pct: 0.42, Na_pct: 0.03, K_pct: 2.00, Cl_pct: 0.05, Lys_pct: 2.95, TSAA_pct: 1.40, Thr_pct: 1.90, Val_pct: 2.30, Ile_pct: 2.20, Leu_pct: 3.80, Arg_pct: 3.50, Try_pct: 0.65, Starch_pct: 2.5, CF_pct: 3.5, NDF_pct: 7.0, ADF_pct: 5.0, Ash_pct: 6.5, Choline_mg_per_kg: 2800, Price_USD_per_ton: 450 },
+    { id: 6, Name: 'Soybean Meal 44%', category: 'Protein', Inclusion_pct: 0, CP_pct: 44.0, ME_kcal_per_kg: 2240, Ca_pct: 0.30, avP_pct: 0.25, phytateP_pct: 0.39, Na_pct: 0.03, K_pct: 1.90, Cl_pct: 0.05, Lys_pct: 2.70, TSAA_pct: 1.30, Thr_pct: 1.75, Val_pct: 2.10, Ile_pct: 2.00, Leu_pct: 3.50, Arg_pct: 3.20, Try_pct: 0.60, Starch_pct: 3.0, CF_pct: 6.5, NDF_pct: 12.0, ADF_pct: 8.0, Ash_pct: 6.0, Choline_mg_per_kg: 2700, Price_USD_per_ton: 420 },
+    { id: 7, Name: 'Canola Meal', category: 'Protein', Inclusion_pct: 0, CP_pct: 36.0, ME_kcal_per_kg: 2100, Ca_pct: 0.60, avP_pct: 0.28, phytateP_pct: 0.50, Na_pct: 0.05, K_pct: 1.20, Cl_pct: 0.10, Lys_pct: 1.90, TSAA_pct: 1.45, Thr_pct: 1.50, Val_pct: 1.80, Ile_pct: 1.50, Leu_pct: 2.70, Arg_pct: 2.20, Try_pct: 0.45, Starch_pct: 1.0, CF_pct: 12.0, NDF_pct: 22.0, ADF_pct: 16.0, Ash_pct: 7.0, Choline_mg_per_kg: 6000, Price_USD_per_ton: 350 },
+    { id: 8, Name: 'Wheat Bran', category: 'Protein', Inclusion_pct: 0, CP_pct: 15.0, ME_kcal_per_kg: 1300, Ca_pct: 0.12, avP_pct: 0.15, phytateP_pct: 0.85, Na_pct: 0.03, K_pct: 1.20, Cl_pct: 0.10, Lys_pct: 0.60, TSAA_pct: 0.45, Thr_pct: 0.48, Val_pct: 0.75, Ile_pct: 0.55, Leu_pct: 1.00, Arg_pct: 0.90, Try_pct: 0.20, Starch_pct: 20, CF_pct: 10.0, NDF_pct: 40, ADF_pct: 12, Ash_pct: 6.0, Choline_mg_per_kg: 1200, Price_USD_per_ton: 180 },
+    // Amino Acids
+    { id: 9, Name: 'L-Lysine HCl', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 94.4, ME_kcal_per_kg: 3970, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 19.3, Lys_pct: 76, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.5, Choline_mg_per_kg: 0, Price_USD_per_ton: 2000 },
+    { id: 10, Name: 'DL-Methionine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 58.1, ME_kcal_per_kg: 5960, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 96, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 3000 },
+    { id: 11, Name: 'L-Threonine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 74.0, ME_kcal_per_kg: 3500, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 96, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 2500 },
+    { id: 12, Name: 'L-Valine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 80.0, ME_kcal_per_kg: 4000, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 96, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 4500 },
+    { id: 13, Name: 'L-Isoleucine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 75.0, ME_kcal_per_kg: 4200, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 96, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 5500 },
+    { id: 14, Name: 'L-Tryptophan', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 85.0, ME_kcal_per_kg: 5200, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 99.0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 8000 },
+    { id: 15, Name: 'L-Arginine', category: 'AminoAcids', Inclusion_pct: 0, CP_pct: 82.0, ME_kcal_per_kg: 4700, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 96, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0.2, Choline_mg_per_kg: 0, Price_USD_per_ton: 6000 },
+    // Mineral Supplements
+    { id: 16, Name: 'Limestone', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 36.0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 98.0, Choline_mg_per_kg: 0, Price_USD_per_ton: 50 },
+    { id: 17, Name: 'Dicalcium Phosphate', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 22.0, avP_pct: 16.5, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 90.0, Choline_mg_per_kg: 0, Price_USD_per_ton: 700 },
+    { id: 18, Name: 'Salt (NaCl)', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 39.0, K_pct: 0, Cl_pct: 60.0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 99.5, Choline_mg_per_kg: 0, Price_USD_per_ton: 80 },
+    { id: 19, Name: 'Sodium Bicarbonate', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 27.0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 63.0, Choline_mg_per_kg: 0, Price_USD_per_ton: 300 },
+    // Other Additives
+    { id: 20, Name: 'Choline Chloride 60%', category: 'Other', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 447000, Price_USD_per_ton: 1500 },
+    { id: 21, Name: 'Toxin Binder', category: 'Other', description: 'Bentonite-based mycotoxin binder', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 2000 },
+    { id: 22, Name: 'Mold Inhibitor', category: 'Other', description: 'Propionic acid-based mold inhibitor', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 1800 },
+    { id: 23, Name: 'Pomegranate Peel', category: 'Other', description: 'Source of fiber and antioxidants', Inclusion_pct: 0, CP_pct: 4.0, ME_kcal_per_kg: 1500, Ca_pct: 0.5, avP_pct: 0.05, phytateP_pct: 0, Na_pct: 0.01, K_pct: 1.0, Cl_pct: 0.05, Lys_pct: 0.1, TSAA_pct: 0.05, Thr_pct: 0.1, Val_pct: 0.15, Ile_pct: 0.1, Leu_pct: 0.2, Arg_pct: 0.15, Try_pct: 0.02, Starch_pct: 5, CF_pct: 20.0, NDF_pct: 45, ADF_pct: 35, Ash_pct: 5.0, Choline_mg_per_kg: 200, Price_USD_per_ton: 150 },
+    { id: 24, Name: 'Brewer\'s Yeast', category: 'Protein', description: 'Source of protein and B-vitamins', Inclusion_pct: 0, CP_pct: 45.0, ME_kcal_per_kg: 2600, Ca_pct: 0.1, avP_pct: 1.0, phytateP_pct: 0.1, Na_pct: 0.1, K_pct: 2.0, Cl_pct: 0.1, Lys_pct: 3.5, TSAA_pct: 1.2, Thr_pct: 2.5, Val_pct: 2.8, Ile_pct: 2.2, Leu_pct: 3.5, Arg_pct: 2.4, Try_pct: 0.6, Starch_pct: 0, CF_pct: 2.0, NDF_pct: 5, ADF_pct: 3, Ash_pct: 8.0, Choline_mg_per_kg: 4000, Price_USD_per_ton: 900 },
+    { id: 25, Name: 'Sodium Sulfate', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 32.4, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 56.6, Choline_mg_per_kg: 0, Price_USD_per_ton: 200 },
+    { id: 26, Name: 'Anticoccidial', category: 'Medicated', description: 'Medicated feed additive to control coccidiosis', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 10000 },
+    { id: 27, Name: 'Anti-inflammatory Additive', category: 'Other', description: 'Functional feed additive with anti-inflammatory properties', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 5000 },
+    { id: 28, Name: 'Monocalcium Phosphate', category: 'MineralSupplements', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 16.0, avP_pct: 21.0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 85.0, Choline_mg_per_kg: 0, Price_USD_per_ton: 800 },
+    { id: 29, Name: 'Pellet Binder', category: 'Other', description: 'Lignosulfonate-based binder', Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 400 },
+    // Enzymes as regular ingredients
+    { 
+      id: 30, 
+      Name: 'Phytase (Calculated)', 
+      category: 'Enzymes', 
+      description: 'Nutrient profile calculated from release values at a 150 g/ton dosage.',
+      Inclusion_pct: 0, 
+      Price_USD_per_ton: 15000,
+      CP_pct: 2073.33,
+      ME_kcal_per_kg: 500000,
+      Ca_pct: 733.33,
+      avP_pct: 600,
+      phytateP_pct: 0,
+      Na_pct: 0,
+      K_pct: 0,
+      Cl_pct: 0,
+      Lys_pct: 85.33,
+      TSAA_pct: 53.33,
+      Thr_pct: 53.33,
+      Val_pct: 0,
+      Ile_pct: 0,
+      Leu_pct: 0,
+      Arg_pct: 0,
+      Try_pct: 0,
+      Starch_pct: 0,
+      CF_pct: 0,
+      NDF_pct: 0,
+      ADF_pct: 0,
+      Ash_pct: 0,
+      Choline_mg_per_kg: 0
     },
-  },
-  {
-    id: 'xylanase_1',
-    name: 'Xylanase 10000 U/g',
-    dosage_g_per_ton: 0,
-    standard_dosage_g_per_ton: 100,
-    max_effective_dosage_g_per_ton: 120,
-    Price_USD_per_ton: 18000,
-    matrix: {
-      ME_kcal_per_kg: 80,
+    { 
+      id: 31, 
+      Name: 'Fiber Enzyme (Calculated)', 
+      category: 'Enzymes', 
+      description: 'Nutrient profile calculated from release values at a 150 g/ton dosage.',
+      Inclusion_pct: 0, 
+      Price_USD_per_ton: 18000,
+      CP_pct: 666.67,
+      ME_kcal_per_kg: 800000,
+      Ca_pct: 33.33,
+      avP_pct: 16.67,
+      phytateP_pct: 0,
+      Na_pct: 0,
+      K_pct: 0,
+      Cl_pct: 0,
+      Lys_pct: 40.00,
+      TSAA_pct: 13.33,
+      Thr_pct: 13.33,
+      Val_pct: 0,
+      Ile_pct: 0,
+      Leu_pct: 0,
+      Arg_pct: 0,
+      Try_pct: 0,
+      Starch_pct: 0,
+      CF_pct: 0,
+      NDF_pct: 0,
+      ADF_pct: 0,
+      Ash_pct: 0,
+      Choline_mg_per_kg: 0
     },
-  },
-  {
-    id: 'protease_1',
-    name: 'Protease 75000 U/g',
-    dosage_g_per_ton: 0,
-    standard_dosage_g_per_ton: 200,
-    max_effective_dosage_g_per_ton: 250,
-    Price_USD_per_ton: 22000,
-    matrix: {
-      CP_pct: 1.5,
-      Lys_pct: 0.05,
-      TSAA_pct: 0.04,
+    { 
+      id: 32, 
+      Name: 'Protease (Calculated)', 
+      category: 'Enzymes', 
+      description: 'Nutrient profile calculated from release values at a 200 g/ton dosage.',
+      Inclusion_pct: 0, 
+      Price_USD_per_ton: 12000,
+      CP_pct: 4000,
+      ME_kcal_per_kg: 0,
+      Ca_pct: 0,
+      avP_pct: 0,
+      phytateP_pct: 0,
+      Na_pct: 0,
+      K_pct: 0,
+      Cl_pct: 0,
+      Lys_pct: 245,
+      TSAA_pct: 115,
+      Thr_pct: 160,
+      Val_pct: 190,
+      Ile_pct: 180,
+      Leu_pct: 0,
+      Arg_pct: 290,
+      Try_pct: 50,
+      Starch_pct: 0,
+      CF_pct: 0,
+      NDF_pct: 0,
+      ADF_pct: 0,
+      Ash_pct: 0,
+      Choline_mg_per_kg: 0
     },
-  },
 ];
 
 export const initialVitaminsData: Vitamin[] = [

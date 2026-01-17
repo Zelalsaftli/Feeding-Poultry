@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import type { Enzyme } from '../types';
+import type { Ingredient } from '../types';
 import EnzymeMatrixModal from './EnzymeMatrixModal';
 
 interface EnzymeManagerProps {
-    enzymes: Enzyme[];
-    onUpdateEnzyme: (enzyme: Enzyme) => void;
+    enzymes: Ingredient[];
+    onUpdateEnzyme: (enzyme: Ingredient) => void;
 }
 
 const EnzymeManager: React.FC<EnzymeManagerProps> = ({ enzymes, onUpdateEnzyme }) => {
-    const [editingEnzyme, setEditingEnzyme] = useState<Enzyme | null>(null);
+    const [editingEnzyme, setEditingEnzyme] = useState<Ingredient | null>(null);
 
-    const handleDosageChange = (enzyme: Enzyme, value: string) => {
+    const handleDosageChange = (enzyme: Ingredient, value: string) => {
         const numericValue = parseFloat(value);
-        onUpdateEnzyme({ ...enzyme, dosage_g_per_ton: isNaN(numericValue) ? 0 : numericValue });
+        onUpdateEnzyme({ ...enzyme, standard_dosage_g_per_ton: isNaN(numericValue) ? 0 : numericValue });
     };
     
-    const handleSaveMatrix = (updatedEnzyme: Enzyme) => {
+    const handleSaveMatrix = (updatedEnzyme: Ingredient) => {
         onUpdateEnzyme(updatedEnzyme);
         setEditingEnzyme(null);
     }
@@ -30,7 +30,7 @@ const EnzymeManager: React.FC<EnzymeManagerProps> = ({ enzymes, onUpdateEnzyme }
                     <div key={enzyme.id} className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 p-3 bg-gray-50 rounded-md border">
                         <div className="md:col-span-1">
                              <label htmlFor={`enzyme-name-${enzyme.id}`} className="text-lg font-medium text-gray-800">
-                                {enzyme.name}
+                                {enzyme.Name}
                             </label>
                         </div>
 
@@ -40,7 +40,7 @@ const EnzymeManager: React.FC<EnzymeManagerProps> = ({ enzymes, onUpdateEnzyme }
                                 type="text"
                                 inputMode="decimal"
                                 id={`enzyme-dosage-${enzyme.id}`}
-                                value={enzyme.dosage_g_per_ton}
+                                value={enzyme.standard_dosage_g_per_ton || 0}
                                 onChange={(e) => handleDosageChange(enzyme, e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
                             />
@@ -59,7 +59,7 @@ const EnzymeManager: React.FC<EnzymeManagerProps> = ({ enzymes, onUpdateEnzyme }
             </div>
             {editingEnzyme && (
                 <EnzymeMatrixModal 
-                    enzyme={editingEnzyme}
+                    ingredient={editingEnzyme}
                     onSave={handleSaveMatrix}
                     onClose={() => setEditingEnzyme(null)}
                 />

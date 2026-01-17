@@ -46,35 +46,35 @@ const EditableNumericCell: React.FC<{
 
 const MineralPremixPage: React.FC = () => {
     const [minerals, setMinerals] = useState<Mineral[]>(() => {
-        const saved = localStorage.getItem('mineralPremixData_en_v1');
+        const saved = localStorage.getItem('mineralPremixData_v1');
         return saved ? JSON.parse(saved) : initialMineralsData;
     });
     const [premixInclusionRate, setPremixInclusionRate] = useState<number>(() => {
-        const saved = localStorage.getItem('mineralInclusionRate_en_v1');
+        const saved = localStorage.getItem('mineralInclusionRate_v1');
         return saved ? JSON.parse(saved) : 2.5;
     });
     const [premixBatchSize, setPremixBatchSize] = useState<number>(() => {
-        const saved = localStorage.getItem('mineralBatchSize_en_v1');
+        const saved = localStorage.getItem('mineralBatchSize_v1');
         return saved ? JSON.parse(saved) : 100;
     });
 
     useEffect(() => {
-        localStorage.setItem('mineralPremixData_en_v1', JSON.stringify(minerals));
+        localStorage.setItem('mineralPremixData_v1', JSON.stringify(minerals));
     }, [minerals]);
 
     useEffect(() => {
-        localStorage.setItem('mineralInclusionRate_en_v1', JSON.stringify(premixInclusionRate));
+        localStorage.setItem('mineralInclusionRate_v1', JSON.stringify(premixInclusionRate));
     }, [premixInclusionRate]);
 
     useEffect(() => {
-        localStorage.setItem('mineralBatchSize_en_v1', JSON.stringify(premixBatchSize));
+        localStorage.setItem('mineralBatchSize_v1', JSON.stringify(premixBatchSize));
     }, [premixBatchSize]);
     
     const handleReset = () => {
         if (window.confirm('Are you sure you want to reset all mineral premix data to the application defaults?')) {
-            localStorage.removeItem('mineralPremixData_en_v1');
-            localStorage.removeItem('mineralInclusionRate_en_v1');
-            localStorage.removeItem('mineralBatchSize_en_v1');
+            localStorage.removeItem('mineralPremixData_v1');
+            localStorage.removeItem('mineralInclusionRate_v1');
+            localStorage.removeItem('mineralBatchSize_v1');
             setMinerals(initialMineralsData);
             setPremixInclusionRate(2.5);
             setPremixBatchSize(100);
@@ -165,7 +165,7 @@ const MineralPremixPage: React.FC = () => {
                         onClick={handleReset}
                         className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm"
                     >
-                        Reset to Defaults
+                        Reset Defaults
                     </button>
                 </div>
                 
@@ -219,7 +219,7 @@ const MineralPremixPage: React.FC = () => {
                                         </select>
                                     </td>
                                     <td className="px-2 py-2">
-                                        <Tooltip text={`Pure element percentage in the commercial product`}>
+                                        <Tooltip text={`Percentage of the pure element in the commercial product`}>
                                             <EditableNumericCell initialValue={selectedSource.productConcentration_pct} onSave={value => handleSourceChange(m.id, m.selectedSourceIndex, 'productConcentration_pct', value)} className="w-24 p-1 border rounded-md text-center" />
                                         </Tooltip>
                                     </td>
@@ -233,14 +233,14 @@ const MineralPremixPage: React.FC = () => {
             </div>
 
              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h3 className="text-xl font-bold text-gray-700 mb-4">Premix Composition Summary ({premixBatchSize} kg Batch)</h3>
+                <h3 className="text-xl font-bold text-gray-700 mb-4">Premix Formulation Summary ({premixBatchSize} kg Batch)</h3>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
                         <span className="font-medium text-gray-600">Total Mineral Product Weight:</span>
                         <span className="font-bold text-lg text-gray-800">{calculations.totalProductWeight_kg.toFixed(3)} kg</span>
                     </div>
                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                        <span className="font-medium text-gray-600">Carrier Weight (Calcium Carbonate):</span>
+                        <span className="font-medium text-gray-600">Carrier Weight (e.g., Limestone):</span>
                         <span className="font-bold text-lg text-gray-800">{calculations.carrierWeight_kg.toFixed(3)} kg</span>
                     </div>
                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
@@ -252,7 +252,7 @@ const MineralPremixPage: React.FC = () => {
                         <span className="font-bold text-lg text-green-700">${calculations.costPerKgPremix.toFixed(2)} / kg</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                        <span className="font-medium text-gray-600">Added Cost per ton of Feed:</span>
+                        <span className="font-medium text-gray-600">Added Cost per Ton of Feed:</span>
                         <span className="font-bold text-lg text-blue-800">${calculations.costPerTonFeed.toFixed(2)} / ton feed</span>
                     </div>
                 </div>

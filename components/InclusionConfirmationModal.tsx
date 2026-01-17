@@ -28,7 +28,7 @@ const InclusionConfirmationModal: React.FC<InclusionConfirmationModalProps> = ({
           </div>
           <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
             <h3 className="text-lg leading-6 font-bold text-gray-900" id="modal-title">
-              Total Inclusion is not 100%
+              Total Inclusion is Not 100%
             </h3>
             <div className="mt-2">
               <p className="text-sm text-gray-600">
@@ -43,7 +43,7 @@ const InclusionConfirmationModal: React.FC<InclusionConfirmationModalProps> = ({
             className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-teal-600 text-base font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:ml-3 sm:w-auto sm:text-sm"
             onClick={onNormalizeAndProceed}
           >
-            Balance and Proceed
+            Balance & Proceed
           </button>
           <button
             type="button"

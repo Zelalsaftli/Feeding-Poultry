@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Ingredient, IngredientCategory } from '../types';
-import { COLUMN_HEADERS_EN, CATEGORY_NAMES_EN } from '../constants';
+import { COLUMN_HEADERS, CATEGORY_NAMES } from '../constants';
 
 interface IngredientEditModalProps {
   ingredient: Ingredient;
@@ -38,7 +38,7 @@ const IngredientEditModal: React.FC<IngredientEditModalProps> = ({ ingredient, o
     onSave(updatedIngredient);
   };
   
-  const numericFields = Object.keys(COLUMN_HEADERS_EN).filter(key => !['id', 'Name', 'description', 'category'].includes(key)) as (keyof Ingredient)[];
+  const numericFields = Object.keys(COLUMN_HEADERS).filter(key => !['id', 'Name', 'description', 'category'].includes(key)) as (keyof Ingredient)[];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 no-print" onClick={onClose}>
@@ -50,7 +50,7 @@ const IngredientEditModal: React.FC<IngredientEditModalProps> = ({ ingredient, o
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mb-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS_EN['Name']}</label>
+                <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS['Name']}</label>
                 <input
                     type="text"
                     value={formState.Name}
@@ -59,19 +59,19 @@ const IngredientEditModal: React.FC<IngredientEditModalProps> = ({ ingredient, o
                 />
             </div>
             <div>
-                 <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS_EN['category']}</label>
+                 <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS['category']}</label>
                  <select
                     value={formState.category}
                     onChange={(e) => handleChange('category', e.target.value)}
                     className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 bg-white"
                  >
-                    {Object.entries(CATEGORY_NAMES_EN).map(([key, value]) => (
+                    {Object.entries(CATEGORY_NAMES).map(([key, value]) => (
                         <option key={key} value={key}>{value}</option>
                     ))}
                  </select>
             </div>
              <div>
-                 <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS_EN['Price_USD_per_ton']}</label>
+                 <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS['Price_USD_per_ton']}</label>
                  <input
                     type="text"
                     inputMode="decimal"
@@ -83,7 +83,7 @@ const IngredientEditModal: React.FC<IngredientEditModalProps> = ({ ingredient, o
         </div>
         
         <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS_EN['description']}</label>
+            <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS['description']}</label>
             <textarea
                 value={formState.description || ''}
                 onChange={(e) => handleChange('description', e.target.value)}
@@ -98,7 +98,7 @@ const IngredientEditModal: React.FC<IngredientEditModalProps> = ({ ingredient, o
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
             {numericFields.filter(f => f !== 'Price_USD_per_ton').map(field => (
                  <div key={field}>
-                     <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS_EN[field]}</label>
+                     <label className="block text-sm font-medium text-gray-700">{COLUMN_HEADERS[field]}</label>
                      <input
                         type="text"
                         inputMode="decimal"

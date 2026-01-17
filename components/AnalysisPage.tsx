@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { MixAnalysisResult, GrowthPhase, AviagenRecommendation, RecommendationOverrides } from '../types';
-import { ANALYSIS_RESULTS_EN, ROSS_308_RECOMMENDATIONS, NUTRIENT_UNITS, convertValue } from '../constants';
+import type { FeedAnalysisResult, GrowthPhase, AviagenRecommendation, RecommendationOverrides } from '../types';
+import { ANALYSIS_RESULTS, ROSS_308_RECOMMENDATIONS, NUTRIENT_UNITS, convertValue } from '../constants';
 import NutrientVisibilityModal from './NutrientVisibilityModal';
 import NutrientRadarChart from './NutrientRadarChart';
 
 interface AnalysisPageProps {
-  results: MixAnalysisResult;
+  results: FeedAnalysisResult;
   growthPhase: GrowthPhase;
   setGrowthPhase: (phase: GrowthPhase) => void;
   recommendationOverrides: RecommendationOverrides;
@@ -28,17 +28,38 @@ const getStatus = (value: number, min: number, max: number) => {
   }
 
   // Handle standard range recommendations
-  if (value >= min && value <= max) return { text: 'Within Range', color: 'bg-green-100 text-green-800' };
+  if (value >= min && value <= max) return { text: 'In Range', color: 'bg-green-100 text-green-800' };
   if ((value > max && value <= max * (1 + tolerance)) || (value < min && value >= min * (1 - tolerance))) return { text: 'Borderline', color: 'bg-yellow-100 text-yellow-800' };
   return { text: 'Out of Range', color: 'bg-red-100 text-red-800' };
 };
 
 const nutrientGroups = {
-  'Key Performance': ['nutrients.ME_kcal_per_kg', 'nutrients.CP_pct'],
-  'Major Minerals': ['nutrients.Ca_pct', 'nutrients.avP_pct', 'nutrients.CaAvP_Ratio', 'nutrients.Na_pct', 'nutrients.Ash_pct'],
+  'Key Performance Indicators': ['nutrients.ME_kcal_per_kg', 'nutrients.CP_pct'],
+  'Macrominerals': ['nutrients.Ca_pct', 'nutrients.avP_pct', 'nutrients.phytateP_pct', 'nutrients.CaAvP_Ratio', 'nutrients.Na_pct', 'nutrients.Ash_pct'],
   'Essential Amino Acids': ['nutrients.Lys_pct', 'nutrients.TSAA_pct', 'nutrients.Arg_pct', 'nutrients.Thr_pct', 'nutrients.Val_pct', 'nutrients.Ile_pct'],
   'Other Nutrients': ['nutrients.Choline_mg_per_kg'],
 };
+
+const RADAR_CHART_LABELS: Record<string, string> = {
+    'nutrients.ME_kcal_per_kg': 'ME',
+    'nutrients.CP_pct': 'CP',
+    'nutrients.Lys_pct': 'Lys',
+    'nutrients.TSAA_pct': 'Met+Cys',
+    'nutrients.Ca_pct': 'Ca',
+    'nutrients.avP_pct': 'avP',
+    'nutrients.Na_pct': 'Na'
+};
+
+const KEY_METRICS = new Set([
+  'totalCostPerTon',
+  'nutrients.CP_pct',
+  'nutrients.ME_kcal_per_kg',
+  'nutrients.Lys_pct',
+  'nutrients.TSAA_pct',
+  'nutrients.Ca_pct',
+  'nutrients.avP_pct',
+  'nutrients.Na_pct',
+]);
 
 const ComparisonRow: React.FC<{
     nutrientKey: string;
@@ -69,7 +90,7 @@ const ComparisonRow: React.FC<{
             onUpdateOverride(nutrientKey, { min, max });
             setIsEditing(false);
         } else {
-            alert('Please enter valid numeric values and ensure Minimum is not greater than Maximum.');
+            alert('Please enter valid numeric values and ensure Min is not greater than Max.');
         }
     };
 
@@ -210,6 +231,8 @@ const ComparisonRow: React.FC<{
 const AnalysisPage: React.FC<AnalysisPageProps> = ({ results, growthPhase, setGrowthPhase, recommendationOverrides, onUpdateOverride, onResetAllOverrides, nutrientVisibility, onUpdateNutrientVisibility, nutrientUnits, onUpdateNutrientUnit }) => {
   const [isComparisonExpanded, setIsComparisonExpanded] = useState(true);
   const [isChartExpanded, setIsChartExpanded] = useState(true);
+  const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(true);
+  const [isNutrientProfileExpanded, setIsNutrientProfileExpanded] = useState(true);
   const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
 
   const activeRecommendations = useMemo(() => {
@@ -233,7 +256,13 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ results, growthPhase, setGr
       if (parts.length === 2 && parts[0] === 'nutrients') {
           return results.nutrients[parts[1]] ?? 0;
       }
-      return (results[key] as number) ?? 0;
+      if (key === 'totalCostPerTon') {
+        return results.totalCostPerTon;
+      }
+      if (key === 'totalCostPer100kg') {
+        return results.totalCostPer100kg;
+      }
+      return 0;
   }
 
   const radarChartData = useMemo(() => {
@@ -250,7 +279,7 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ results, growthPhase, setGr
         const recommendation = activeRecommendations[key];
         if (!recommendation) return null;
         return {
-            label: ANALYSIS_RESULTS_EN[key]?.replace('%', '').trim() || key,
+            label: RADAR_CHART_LABELS[key] || ANALYSIS_RESULTS[key]?.replace('%', '').trim() || key,
             value: getNutrientValue(key),
             min: recommendation.min,
             max: recommendation.max,
@@ -261,190 +290,218 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ results, growthPhase, setGr
   const criticalWarnings = [];
   const cholineRec = activeRecommendations['nutrients.Choline_mg_per_kg'];
   if (cholineRec && getNutrientValue('nutrients.Choline_mg_per_kg') < cholineRec.min) {
-      criticalWarnings.push('Choline level is below the recommended minimum.');
+    criticalWarnings.push('Choline level is below the recommended minimum.');
   }
-  const caAvpRatioRec = activeRecommendations['nutrients.CaAvP_Ratio'];
-  const caAvpRatio = getNutrientValue('nutrients.CaAvP_Ratio');
-  if (caAvpRatioRec && (caAvpRatio < caAvpRatioRec.min || caAvpRatio > caAvpRatioRec.max)) {
-      criticalWarnings.push('Calcium to Available Phosphorus ratio is imbalanced.');
-  }
-  const naRec = activeRecommendations['nutrients.Na_pct'];
-  const naValue = getNutrientValue('nutrients.Na_pct');
-  if (naRec && (naValue < naRec.min || naValue > naRec.max)) {
-      criticalWarnings.push('Sodium level is out of the recommended range.');
+  const caAvPRatioRec = activeRecommendations['nutrients.CaAvP_Ratio'];
+  if (caAvPRatioRec && (getNutrientValue('nutrients.CaAvP_Ratio') < caAvPRatioRec.min || getNutrientValue('nutrients.CaAvP_Ratio') > caAvPRatioRec.max)) {
+    criticalWarnings.push('Calcium to Available Phosphorus ratio is out of the recommended range.');
   }
 
-  const visibleNutrientsForSummary = Object.keys(ANALYSIS_RESULTS_EN).filter(key => nutrientVisibility[key]);
+  const allVisibleKeys = Object.keys(ANALYSIS_RESULTS).filter(key => nutrientVisibility[key]);
 
   return (
-    <>
-      <div className="space-y-8" id="report-content">
-        <div className="print-only text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Feed Analysis Report</h1>
-            <p className="text-gray-600">Report Date: {new Date().toLocaleDateString('en-US')}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">Feed Analysis Summary</h2>
-          {visibleNutrientsForSummary.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {visibleNutrientsForSummary.map(key => {
-                const selectedUnit = nutrientUnits[key] || NUTRIENT_UNITS[key]?.baseUnit;
-                const baseValue = getNutrientValue(key);
-                const { value: convertedValue, unit: displayUnit } = convertValue(baseValue, key, selectedUnit);
-                
-                return (
-                  <div key={key} className="bg-gray-50 p-4 rounded-md text-center">
-                    <p className="text-sm text-gray-500">{ANALYSIS_RESULTS_EN[key]}</p>
-                    <p className="text-xl font-bold text-teal-600">{convertedValue.toFixed(2)} <span className="text-sm font-normal text-gray-500">{displayUnit}</span></p>
-                  </div>
-                )
-              })}
+    <div className="space-y-6">
+      <NutrientVisibilityModal 
+        isOpen={isVisibilityModalOpen}
+        onClose={() => setIsVisibilityModalOpen(false)}
+        onSave={onUpdateNutrientVisibility}
+        currentVisibility={nutrientVisibility}
+      />
+      
+      {/* Page Header */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="flex flex-wrap justify-between items-center mb-4 gap-4 no-print">
+            <div>
+                <h2 className="text-2xl font-bold text-gray-700">Feed Analysis Report</h2>
+                <p className="text-gray-500">Comparing formulation against Ross 308 recommendations.</p>
             </div>
-          ) : (
-            <p className="text-center text-gray-500 py-4">No items selected for display. Please adjust the display settings.</p>
-          )}
-        </div>
-        
-        {criticalWarnings.length > 0 && (
-          <div className="bg-red-50 p-6 rounded-lg shadow-lg border-2 border-red-500" role="alert">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-              </div>
-              <div className="ml-4">
-                  <h3 className="text-xl font-bold text-red-800">Important Warnings</h3>
-                  <p className="text-red-700 mt-1">Critical issues were detected in the mix that may affect bird performance:</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1 text-red-900 font-medium">
-                      {criticalWarnings.map((warn, i) => <li key={i}>{warn}</li>)}
-                  </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden no-print">
-            <button
-                onClick={() => setIsChartExpanded(!isChartExpanded)}
-                className="w-full flex justify-between items-center p-4 text-left focus:outline-none hover:bg-gray-50 focus:bg-gray-100 transition-colors"
-                aria-expanded={isChartExpanded}
-                aria-controls="chart-content"
-            >
-                <h2 className="text-2xl font-bold text-gray-700">Nutrient Balance Radar Chart</h2>
-                <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-500 transform transition-transform ${isChartExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-            {isChartExpanded && (
-                <div id="chart-content" className="p-6 border-t border-gray-200">
-                    <p className="text-center text-gray-600 mb-4">This chart provides a visual representation of the formulated feed against the recommended nutrient ranges. The <span className="font-bold text-green-600">green area</span> is the target range, and the <span className="font-bold text-blue-600">blue line</span> is your feed.</p>
-                    <NutrientRadarChart data={radarChartData} size={500} />
-                </div>
-            )}
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-          <button
-            onClick={() => setIsComparisonExpanded(!isComparisonExpanded)}
-            className="w-full flex justify-between items-center p-4 text-left focus:outline-none hover:bg-gray-50 focus:bg-gray-100 transition-colors"
-            aria-expanded={isComparisonExpanded}
-            aria-controls="comparison-content"
-          >
-            <h2 className="text-2xl font-bold text-gray-700">Detailed Comparison with Aviagen Ross 308 Recommendations</h2>
-            <div className="flex items-center">
-              <div className="no-print flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <button onClick={() => window.print()} className="bg-teal-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-700 transition-colors text-sm">
+            <div className="flex items-center gap-2 flex-wrap">
+                 <button onClick={() => window.print()} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
                     Print Report
                 </button>
-                <button onClick={() => setIsVisibilityModalOpen(true)} className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm">
-                    Customize View
+                 <button onClick={() => setIsVisibilityModalOpen(true)} className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
+                    Customize Display
                 </button>
-                <button onClick={onResetAllOverrides} className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm">
-                    Restore Defaults
-                </button>
-                <select
-                  value={growthPhase}
-                  onChange={(e) => setGrowthPhase(e.target.value as GrowthPhase)}
-                  className="p-2 border border-gray-300 rounded-md bg-white"
-                >
-                  <option value="Starter">Starter (0-10d)</option>
-                  <option value="Grower">Grower (11-24d)</option>
-                  <option value="Finisher 1">Finisher 1 (25-39d)</option>
-                  <option value="Finisher 2">Finisher 2 (40d+)</option>
-                </select>
-              </div>
-              <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-500 transform transition-transform ml-4 no-print ${isComparisonExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
             </div>
-          </button>
-
-          {isComparisonExpanded && (
-            <div id="comparison-content" className="p-6 border-t border-gray-200">
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="py-2 px-4 border-b text-left font-semibold">Nutrient</th>
-                      <th className="py-2 px-4 border-b text-center font-semibold">Feed Value</th>
-                      <th className="py-2 px-4 border-b text-center font-semibold">Recommendation / Unit</th>
-                      <th className="py-2 px-4 border-b text-center font-semibold">Deviation</th>
-                      <th className="py-2 px-4 border-b text-center font-semibold">Status</th>
-                      <th className="py-2 px-4 border-b text-center font-semibold no-print">Visualization</th>
-                      <th className="py-2 px-4 border-b text-center font-semibold no-print">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(nutrientGroups).map(([groupName, keys]) => {
-                      const visibleKeys = keys.filter(key => nutrientVisibility[key] && activeRecommendations[key]);
-                      if (visibleKeys.length === 0) return null;
-
-                      return (
-                          <React.Fragment key={groupName}>
-                          <tr>
-                              <th colSpan={7} className="bg-teal-50 text-teal-800 text-left font-bold py-2 px-4 border-b border-t">
-                              {groupName}
-                              </th>
-                          </tr>
-                          {visibleKeys.map(key => {
-                              const rec = activeRecommendations[key];
-                              if (!rec) return null;
-                              const isOverridden = Object.prototype.hasOwnProperty.call(recommendationOverrides, key);
-                              const selectedUnit = nutrientUnits[key] || NUTRIENT_UNITS[key]?.baseUnit;
-                              return (
-                                  <ComparisonRow
-                                      key={key}
-                                      nutrientKey={key}
-                                      label={ANALYSIS_RESULTS_EN[key] || key}
-                                      value={getNutrientValue(key)}
-                                      recommendation={rec}
-                                      isOverridden={isOverridden}
-                                      onUpdateOverride={onUpdateOverride}
-                                      selectedUnit={selectedUnit}
-                                      onUpdateUnit={onUpdateNutrientUnit}
-                                  />
-                              );
-                          })}
-                          </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
-        {isVisibilityModalOpen && (
-          <NutrientVisibilityModal
-              isOpen={isVisibilityModalOpen}
-              onClose={() => setIsVisibilityModalOpen(false)}
-              currentVisibility={nutrientVisibility}
-              onSave={onUpdateNutrientVisibility}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-600 mb-1">Growth Phase:</label>
+            <select
+              value={growthPhase}
+              onChange={e => setGrowthPhase(e.target.value as GrowthPhase)}
+              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 bg-white"
+            >
+              {(Object.keys(ROSS_308_RECOMMENDATIONS) as GrowthPhase[]).map(phase => (
+                <option key={phase} value={phase}>{phase}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-sm font-medium text-gray-600">Total Cost per Ton:</span>
+            <span className="text-2xl font-bold text-green-600">${results.totalCostPerTon.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-sm font-medium text-gray-600">Total Inclusion:</span>
+            <span className={`text-2xl font-bold ${Math.abs(100 - results.totalInclusion) > 0.1 ? 'text-red-600' : 'text-gray-800'}`}>
+              {results.totalInclusion.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+         {criticalWarnings.length > 0 && (
+          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+            <p className="font-bold">Critical Warnings</p>
+            <ul className="list-disc list-inside mt-2 text-sm">
+              {criticalWarnings.map((warning, i) => <li key={i}>{warning}</li>)}
+            </ul>
+          </div>
         )}
       </div>
-    </>
+
+      {/* Final Nutrient Profile Summary */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <button onClick={() => setIsNutrientProfileExpanded(!isNutrientProfileExpanded)} className="w-full text-left mb-2">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-700">Final Feed Nutrient Profile</h3>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-500 transform transition-transform ${isNutrientProfileExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </button>
+        {isNutrientProfileExpanded && (
+            <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nutrient
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Value
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {allVisibleKeys.map(key => {
+                            const label = ANALYSIS_RESULTS[key] || key;
+                            const value = getNutrientValue(key);
+                            const selectedUnit = nutrientUnits[key] || '';
+                            const { value: convertedValue, unit: displayUnit } = convertValue(value, key, selectedUnit);
+                            const isKeyMetric = KEY_METRICS.has(key);
+
+                            return (
+                                <tr key={key} className="hover:bg-teal-50/75 even:bg-slate-50/75">
+                                    <td className={`px-6 py-3 whitespace-nowrap text-sm ${isKeyMetric ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                                        {label}
+                                    </td>
+                                    <td className={`px-6 py-3 whitespace-nowrap text-right font-mono text-sm ${isKeyMetric ? 'font-bold text-teal-800' : 'text-gray-800'}`}>
+                                        {convertedValue.toFixed(3)}
+                                        <span className="text-xs text-gray-500 ml-2">{displayUnit}</span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        )}
+      </div>
+
+       {/* Nutrient Radar Chart */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <button onClick={() => setIsChartExpanded(!isChartExpanded)} className="w-full text-left">
+          <h3 className="text-xl font-bold text-gray-700 mb-4">Nutrient Balance Radar</h3>
+        </button>
+        {isChartExpanded && (
+            radarChartData.length > 0 ? (
+                <NutrientRadarChart data={radarChartData} />
+            ) : (
+                <p className="text-center text-gray-500">Not enough data for chart.</p>
+            )
+        )}
+      </div>
+
+      {/* Comparison Table */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="flex justify-between items-center mb-4 no-print">
+            <button onClick={() => setIsComparisonExpanded(!isComparisonExpanded)} className="text-left">
+                <h3 className="text-xl font-bold text-gray-700">Nutrient Comparison</h3>
+            </button>
+            <button onClick={onResetAllOverrides} className="text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300">Reset Recommendations</button>
+        </div>
+        {isComparisonExpanded &&
+          <div className="overflow-x-auto">
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Nutrient</th>
+                    <th className="py-2 px-4 border-b text-center text-sm font-semibold text-gray-600">Current Value</th>
+                    <th className="py-2 px-4 border-b text-center text-sm font-semibold text-gray-600">Recommendation</th>
+                    <th className="py-2 px-4 border-b text-center text-sm font-semibold text-gray-600">Deviation</th>
+                    <th className="py-2 px-4 border-b text-center text-sm font-semibold text-gray-600">Status</th>
+                    <th className="py-2 px-4 border-b text-center text-sm font-semibold text-gray-600 no-print">Visual</th>
+                    <th className="py-2 px-4 border-b text-center text-sm font-semibold text-gray-600 no-print">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allVisibleKeys.map(key => {
+                    const recommendation = activeRecommendations[key];
+                    if (!recommendation) return null;
+                    return (
+                      <ComparisonRow 
+                        key={key}
+                        nutrientKey={key}
+                        label={ANALYSIS_RESULTS[key] || key}
+                        value={getNutrientValue(key)}
+                        recommendation={recommendation}
+                        isOverridden={!!recommendationOverrides[key]}
+                        onUpdateOverride={onUpdateOverride}
+                        selectedUnit={nutrientUnits[key] || ''}
+                        onUpdateUnit={onUpdateNutrientUnit}
+                      />
+                    )
+                  })}
+                </tbody>
+              </table>
+          </div>
+        }
+      </div>
+
+      {/* Final Feed Composition */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <button onClick={() => setIsIngredientsExpanded(!isIngredientsExpanded)} className="w-full text-left mb-2">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-700">Final Feed Composition</h3>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-500 transform transition-transform ${isIngredientsExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </button>
+        {isIngredientsExpanded && (
+            <div className="overflow-x-auto">
+                <table className="min-w-full bg-white border">
+                    <thead className="bg-gray-100">
+                        <tr>
+                            <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-700">Ingredient</th>
+                            <th className="py-2 px-4 border-b text-right text-sm font-semibold text-gray-700">Inclusion (%)</th>
+                            <th className="py-2 px-4 border-b text-right text-sm font-semibold text-gray-700">Cost ($/ton)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[...(results.ingredients || [])].sort((a, b) => b.Inclusion_pct - a.Inclusion_pct).map((ing: any) => (
+                            <tr key={ing.id} className="hover:bg-gray-50">
+                                <td className="py-1 px-4 border-b">{ing.Name}</td>
+                                <td className="py-1 px-4 border-b text-right font-mono">{ing.Inclusion_pct.toFixed(3)}</td>
+                                <td className="py-1 px-4 border-b text-right font-mono">${(ing.Price_USD_per_ton || 0).toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        )}
+      </div>
+
+    </div>
   );
 };
 

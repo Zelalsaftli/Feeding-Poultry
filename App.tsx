@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import type { Ingredient, MixAnalysisResult, GrowthPhase, Enzyme, InclusionMode, RecommendationOverrides } from './types';
+import type { Ingredient, FeedAnalysisResult, GrowthPhase, InclusionMode, RecommendationOverrides } from './types';
 import { Page } from './types';
-import { calculateMixAnalysis } from './services/calculationService';
+import { calculateFeedAnalysis } from './services/calculationService';
 import SelectionPage from './components/SelectionPage';
 import InputPage from './components/InputPage';
 import AnalysisPage from './components/AnalysisPage';
@@ -10,9 +10,9 @@ import MineralPremixPage from './components/MineralPremixPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import InclusionConfirmationModal from './components/InclusionConfirmationModal';
-import { initialIngredients, initialEnzymes, ANALYSIS_RESULTS_EN, NUTRIENT_UNITS } from './constants';
+import { initialIngredients, ANALYSIS_RESULTS, NUTRIENT_UNITS } from './constants';
 
-const defaultNutrientVisibility = Object.keys(ANALYSIS_RESULTS_EN).reduce((acc, key) => {
+const defaultNutrientVisibility = Object.keys(ANALYSIS_RESULTS).reduce((acc, key) => {
   acc[key] = true;
   return acc;
 }, {} as Record<string, boolean>);
@@ -26,9 +26,8 @@ const defaultNutrientUnits = Object.keys(NUTRIENT_UNITS).reduce((acc, key) => {
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.SELECTION);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [enzymes, setEnzymes] = useState<Enzyme[]>([]);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<MixAnalysisResult>(() => calculateMixAnalysis([], []));
+  const [analysisResult, setAnalysisResult] = useState<FeedAnalysisResult>(() => calculateFeedAnalysis([]));
   const [animationClass, setAnimationClass] = useState('fade-in');
   const [isNormalizationModalOpen, setIsNormalizationModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -45,13 +44,8 @@ const App: React.FC = () => {
   });
 
   const [masterIngredients, setMasterIngredients] = useState<Ingredient[]>(() => {
-    const saved = localStorage.getItem('masterIngredients_en_v1');
+    const saved = localStorage.getItem('masterIngredients_v2');
     return saved ? JSON.parse(saved) : initialIngredients;
-  });
-
-  const [masterEnzymes, setMasterEnzymes] = useState<Enzyme[]>(() => {
-    const saved = localStorage.getItem('masterEnzymes_en_v1');
-    return saved ? JSON.parse(saved) : initialEnzymes;
   });
   
   const [recommendationOverrides, setRecommendationOverrides] = useState<RecommendationOverrides>(() => {
@@ -71,12 +65,8 @@ const App: React.FC = () => {
   
   // Save settings to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('masterIngredients_en_v1', JSON.stringify(masterIngredients));
+    localStorage.setItem('masterIngredients_v2', JSON.stringify(masterIngredients));
   }, [masterIngredients]);
-
-  useEffect(() => {
-    localStorage.setItem('masterEnzymes_en_v1', JSON.stringify(masterEnzymes));
-  }, [masterEnzymes]);
 
   useEffect(() => {
     localStorage.setItem('growthPhase', growthPhase);
@@ -101,14 +91,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setIsLoadingAnalysis(true);
-    // Defer calculation to next tick to allow UI to update with spinner
     const timer = setTimeout(() => {
-        setAnalysisResult(calculateMixAnalysis(ingredients, enzymes));
+        setAnalysisResult(calculateFeedAnalysis(ingredients));
         setIsLoadingAnalysis(false);
-    }, 50); // Small delay to ensure spinner is visible for fast calcs
+    }, 50);
 
     return () => clearTimeout(timer);
-  }, [ingredients, enzymes]);
+  }, [ingredients]);
 
   const performNavigation = (page: Page) => {
     setAnimationClass('fade-out');
@@ -124,7 +113,7 @@ const App: React.FC = () => {
       setPendingAction(() => action);
       setIsNormalizationModalOpen(true);
     } else {
-      action(); // Run directly if within tolerance
+      action();
     }
   }, [analysisResult.totalInclusion]);
 
@@ -165,8 +154,6 @@ const App: React.FC = () => {
 
   const handleModalNormalizeAndProceed = () => {
     handleNormalize();
-    // Use a short timeout to allow the state update to trigger recalculation
-    // before executing the pending action (like navigation).
     setTimeout(() => {
       if (pendingAction) {
         pendingAction();
@@ -175,23 +162,15 @@ const App: React.FC = () => {
     handleModalClose();
   };
   
-  const handleProceedToInput = useCallback((selectedIngredientIds: number[], selectedEnzymeIds: string[]) => {
+  const handleProceedToInput = useCallback((selectedIngredientIds: number[]) => {
       const selectedMasterIngredients = masterIngredients.filter(ing => selectedIngredientIds.includes(ing.id));
       const newRecipeIngredients = selectedMasterIngredients.map(masterIng => {
           const existingIng = ingredients.find(i => i.id === masterIng.id);
           return existingIng || { ...masterIng, Inclusion_pct: 0 };
       });
       setIngredients(newRecipeIngredients);
-
-      const selectedMasterEnzymes = masterEnzymes.filter(enz => selectedEnzymeIds.includes(enz.id));
-      const newRecipeEnzymes = selectedMasterEnzymes.map(masterEnz => {
-          const existingEnz = enzymes.find(e => e.id === masterEnz.id);
-          return existingEnz || { ...masterEnz, dosage_g_per_ton: 0 };
-      });
-      setEnzymes(newRecipeEnzymes);
-
       handleNavigate(Page.INPUT);
-  }, [ingredients, enzymes, masterIngredients, masterEnzymes, handleNavigate]);
+  }, [ingredients, masterIngredients, handleNavigate]);
   
   const handleAddMasterIngredient = useCallback((newIngredient: Ingredient) => {
     setMasterIngredients(prev => [...prev, { ...newIngredient, id: Date.now() }]);
@@ -205,7 +184,7 @@ const App: React.FC = () => {
 
   const handleResetMasterIngredients = useCallback(() => {
     setMasterIngredients(initialIngredients);
-    alert('The default ingredient list has been restored.');
+    alert('Restored default ingredient database.');
   }, []);
 
   const handleMergeMasterIngredients = useCallback((importedIngredients: Ingredient[]) => {
@@ -244,20 +223,9 @@ const App: React.FC = () => {
         }
       });
       
-      alert(`Import complete. ${updatedCount} ingredients updated and ${addedCount} new ingredients added.`);
+      alert(`Import complete. ${updatedCount} ingredients updated, ${addedCount} new ingredients added.`);
       return newMasterIngredients;
     });
-  }, []);
-
-  const handleUpdateMasterEnzyme = useCallback((updatedEnzyme: Enzyme) => {
-    setMasterEnzymes(prev =>
-      prev.map(enz => (enz.id === updatedEnzyme.id ? updatedEnzyme : enz))
-    );
-  }, []);
-
-  const handleResetMasterEnzymes = useCallback(() => {
-    setMasterEnzymes(initialEnzymes);
-    alert('The default enzyme list has been restored.');
   }, []);
 
   const handleUpdateIngredient = useCallback((index: number, field: keyof Ingredient, value: number | string) => {
@@ -276,19 +244,13 @@ const App: React.FC = () => {
       Name: 'New Ingredient',
       description: '',
       category: 'Other',
-      Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 0,
+      Inclusion_pct: 0, CP_pct: 0, ME_kcal_per_kg: 0, Ca_pct: 0, avP_pct: 0, phytateP_pct: 0, Na_pct: 0, K_pct: 0, Cl_pct: 0, Lys_pct: 0, TSAA_pct: 0, Thr_pct: 0, Val_pct: 0, Ile_pct: 0, Leu_pct: 0, Arg_pct: 0, Try_pct: 0, Starch_pct: 0, CF_pct: 0, NDF_pct: 0, ADF_pct: 0, Ash_pct: 0, Choline_mg_per_kg: 0, Price_USD_per_ton: 0,
     };
     setIngredients(prev => [...prev, newIngredient]);
   }, []);
 
   const handleDeleteIngredient = useCallback((id: number) => {
     setIngredients(prev => prev.filter(ing => ing.id !== id));
-  }, []);
-
-  const handleUpdateEnzyme = useCallback((updatedEnzyme: Enzyme) => {
-    setEnzymes(prev =>
-      prev.map(e => (e.id === updatedEnzyme.id ? updatedEnzyme : e))
-    );
   }, []);
 
   const handleUpdateOverride = useCallback((key: string, values: { min: number; max: number } | null) => {
@@ -304,7 +266,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleResetAllOverrides = useCallback(() => {
-    if (window.confirm('Are you sure you want to restore all default Aviagen recommendations?')) {
+    if (window.confirm('Are you sure you want to reset all recommendations to Aviagen defaults?')) {
       setRecommendationOverrides({});
     }
   }, []);
@@ -324,15 +286,11 @@ const App: React.FC = () => {
           <SelectionPage 
             masterIngredients={masterIngredients}
             recipeIngredients={ingredients}
-            masterEnzymes={masterEnzymes}
-            recipeEnzymes={enzymes}
             onProceed={handleProceedToInput}
             onAddMasterIngredient={handleAddMasterIngredient}
             onUpdateMasterIngredient={handleUpdateMasterIngredient}
             onResetMasterIngredients={handleResetMasterIngredients}
             onMergeMasterIngredients={handleMergeMasterIngredients}
-            onUpdateMasterEnzyme={handleUpdateMasterEnzyme}
-            onResetMasterEnzymes={handleResetMasterEnzymes}
           />
         );
       case Page.INPUT:
@@ -344,8 +302,6 @@ const App: React.FC = () => {
             onAddIngredient={handleAddIngredient}
             onDeleteIngredient={handleDeleteIngredient}
             totalInclusion={analysisResult.totalInclusion}
-            enzymes={enzymes}
-            onUpdateEnzyme={handleUpdateEnzyme}
             inclusionMode={inclusionMode}
             setInclusionMode={setInclusionMode}
             runActionWithNormalizationCheck={runActionWithNormalizationCheck}
@@ -376,7 +332,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col" dir="ltr">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {isLoadingAnalysis && (
         <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center z-50 no-print">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-600"></div>

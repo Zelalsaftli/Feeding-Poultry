@@ -1,94 +1,53 @@
-import type { Ingredient, MixAnalysisResult, Enzyme } from '../types';
+import type { Ingredient, FeedAnalysisResult } from '../types';
 
 const sumProduct = (inclusions: number[], values: number[]): number => {
   return inclusions.reduce((acc, inclusion, i) => acc + (inclusion * (values[i] || 0)), 0);
 };
 
-export const calculateMixAnalysis = (ingredients: Ingredient[], enzymes: Enzyme[]): MixAnalysisResult => {
+export const calculateFeedAnalysis = (ingredients: Ingredient[]): FeedAnalysisResult => {
+  const emptyResult: FeedAnalysisResult = { 
+    totalInclusion: 0,
+    totalCostPerTon: 0,
+    totalCostPer100kg: 0,
+    nutrients: {},
+    ingredients: [],
+  };
+
   if (!ingredients || ingredients.length === 0) {
-    return { 
-      totalInclusion: 0,
-      totalCostPerTon: 0,
-      totalCostPer100kg: 0,
-      nutrients: {}
-    };
+    return emptyResult;
   }
 
   const inclusions = ingredients.map(ing => ing.Inclusion_pct);
   const totalInclusion = inclusions.reduce((sum, val) => sum + val, 0);
 
   const nutrientKeys = Object.keys(ingredients[0] || {}).filter(
-    key => key !== 'id' && key !== 'Name' && key !== 'Inclusion_pct' && key !== 'Price_USD_per_ton' && key !== 'category' && key !== 'description'
+    key => !['id', 'Name', 'Inclusion_pct', 'Price_USD_per_ton', 'category', 'description', 'standard_dosage_g_per_ton', 'matrix'].includes(key)
   );
 
   const results: Record<string, number> = {};
 
+  // Step 1: Calculate nutrient profile from all ingredients, normalized to a 100-part feed
   nutrientKeys.forEach(key => {
     const values = ingredients.map(ing => ing[key as keyof Ingredient] as number);
-    // The value of each nutrient is calculated as the sum of the contributions of each ingredient
-    // (inclusion percentage * nutrient value), divided by 100 to get the final percentage in the mix.
-    results[key] = sumProduct(inclusions, values) / 100;
+    results[key] = totalInclusion > 0 ? sumProduct(inclusions, values) / 100 : 0;
   });
-
-  // Apply enzyme matrices
-  const activeEnzymes = enzymes.filter(e => e.dosage_g_per_ton > 0);
-  activeEnzymes.forEach(enzyme => {
-    const standardDosage = enzyme.standard_dosage_g_per_ton;
-    const maxEffectiveDosage = enzyme.max_effective_dosage_g_per_ton;
-
-    // The dosage for calculation is the user-defined dosage, but capped at the max effective dosage to simulate a plateau.
-    const effectiveDosage = Math.min(enzyme.dosage_g_per_ton || 0, maxEffectiveDosage);
-
-    // Calculate the contribution ratio based on the effective dosage vs. the standard dosage.
-    const dosageRatio = standardDosage > 0 
-      ? effectiveDosage / standardDosage 
-      : 0;
-      
-    if (dosageRatio > 0) {
-        for (const key in enzyme.matrix) {
-          if (results[key] !== undefined) {
-            const matrixValue = enzyme.matrix[key as keyof typeof enzyme.matrix]!;
-            const contribution = matrixValue * dosageRatio;
-            results[key] += contribution;
-          }
-        }
-    }
-  });
-
-
-  // Special calculations (re-calculate after applying enzymes)
+  
+  // Step 2: Calculate derived nutrients
   results.MECP_Ratio = results.CP_pct > 0 ? results.ME_kcal_per_kg / results.CP_pct : 0;
   results.CaAvP_Ratio = results.avP_pct > 0 ? results.Ca_pct / results.avP_pct : 0;
   results.K_Cl_Na_Ratio = results.Na_pct > 0 ? (results.K_pct + results.Cl_pct) / results.Na_pct : 0;
   results.dEB = 434.78 * results.Na_pct + 256.4 * results.K_pct - 281.69 * results.Cl_pct;
   
-  // Calculate cost per ton.
-  // The logic is to determine the cost of a batch of size `totalInclusion` kg,
-  // then normalize that cost to a 1-ton (1000 kg) basis.
-  const ingredientCostForBatch = ingredients.reduce((acc, ing) => {
-    // Cost for 'Inclusion_pct' kg of an ingredient: (Inclusion_pct kg) * (Price $/kg)
-    // Price $/kg = Price $/ton / 1000
-    const cost = ing.Inclusion_pct * ((ing.Price_USD_per_ton || 0) / 1000);
-    return acc + cost;
-  }, 0);
-
-  // The batch size is `totalInclusion` kg.
-  const costPerKgOfMix = totalInclusion > 0 ? ingredientCostForBatch / totalInclusion : 0;
-  
-  const totalIngredientCostPerTon = costPerKgOfMix * 1000;
-
-  const enzymeCostPerTon = activeEnzymes.reduce((acc, enzyme) => {
-    // dosage is in g/ton of feed. Price is in $/ton of enzyme.
-    const dosageInTons = enzyme.dosage_g_per_ton / 1_000_000; // Convert g/ton to ton/ton
-    return acc + (dosageInTons * (enzyme.Price_USD_per_ton || 0));
-  }, 0);
-
-  const totalCostPerTon = totalIngredientCostPerTon + enzymeCostPerTon;
+  // Step 3: Calculate final cost, based on a 100-part feed
+  const totalCostPerTon = totalInclusion > 0 
+    ? ingredients.reduce((acc, ing) => acc + (ing.Inclusion_pct * (ing.Price_USD_per_ton || 0)), 0) / 100
+    : 0;
 
   return {
     totalInclusion,
     totalCostPerTon,
     totalCostPer100kg: totalCostPerTon / 10,
-    nutrients: results
+    nutrients: results,
+    ingredients: ingredients,
   };
 };

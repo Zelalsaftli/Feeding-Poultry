@@ -1,8 +1,7 @@
 import type { Ingredient } from '../types';
-import { COLUMN_HEADERS_EN } from '../constants';
+import { COLUMN_HEADERS } from '../constants';
 
 const HEADER_MAPPING: Record<string, keyof Ingredient> = {
-  // English
   'name': 'Name',
   'inclusion %': 'Inclusion_pct',
   'price ($/ton)': 'Price_USD_per_ton',
@@ -10,6 +9,7 @@ const HEADER_MAPPING: Record<string, keyof Ingredient> = {
   'me (kcal/kg)': 'ME_kcal_per_kg',
   'calcium %': 'Ca_pct',
   'av. phosphorus %': 'avP_pct',
+  'phytate p %': 'phytateP_pct',
   'sodium %': 'Na_pct',
   'potassium %': 'K_pct',
   'chlorine %': 'Cl_pct',
@@ -34,7 +34,7 @@ const HEADER_MAPPING: Record<string, keyof Ingredient> = {
 export const parseCSV = (csvText: string): Ingredient[] => {
   const lines = csvText.trim().split(/\r\n|\n/);
   if (lines.length < 2) {
-    alert('Invalid CSV data. It must contain a header and at least one data row.');
+    alert('Invalid CSV data. Must contain a header row and at least one data row.');
     return [];
   }
   
@@ -44,13 +44,12 @@ export const parseCSV = (csvText: string): Ingredient[] => {
   const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/"/g, ''));
   
   const mappedHeaders = headers.map(h => {
-    // Search for a matching key in HEADER_MAPPING (case-insensitive)
     const matchingKey = Object.keys(HEADER_MAPPING).find(key => key.toLowerCase() === h);
     return matchingKey ? HEADER_MAPPING[matchingKey as keyof typeof HEADER_MAPPING] : null;
   });
   
   if (mappedHeaders.filter(h => h === 'Name').length === 0) {
-    alert('Could not find a "Name" column in the CSV file. This column is required.');
+    alert('Could not find "Name" column in CSV file. This column is required.');
     return [];
   }
 
@@ -91,19 +90,19 @@ const escapeCSVValue = (value: any): string => {
 
 export const exportIngredientsToCSV = (ingredients: Ingredient[], fileName: string = 'ingredients.csv') => {
     if (!ingredients.length) {
-        alert('There are no ingredients to export.');
+        alert('No ingredients to export.');
         return;
     }
 
     const columnOrder: (keyof Omit<Ingredient, 'id'>)[] = [
         'Name', 'Inclusion_pct', 'Price_USD_per_ton', 'CP_pct', 'ME_kcal_per_kg',
-        'Ca_pct', 'avP_pct', 'Na_pct', 'K_pct', 'Cl_pct', 'Lys_pct', 'TSAA_pct',
+        'Ca_pct', 'avP_pct', 'phytateP_pct', 'Na_pct', 'K_pct', 'Cl_pct', 'Lys_pct', 'TSAA_pct',
         'Thr_pct', 'Val_pct', 'Ile_pct', 'Leu_pct', 'Arg_pct', 'Try_pct',
         'Starch_pct', 'CF_pct', 'NDF_pct', 'ADF_pct', 'Ash_pct', 'Choline_mg_per_kg',
         'category', 'description'
     ];
 
-    const headers = columnOrder.map(key => COLUMN_HEADERS_EN[key] || key);
+    const headers = columnOrder.map(key => COLUMN_HEADERS[key] || key);
     
     const csvRows = ingredients.map(ingredient => {
         return columnOrder.map(key => {

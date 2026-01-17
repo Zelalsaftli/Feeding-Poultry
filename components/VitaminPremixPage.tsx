@@ -45,9 +45,42 @@ const EditableNumericCell: React.FC<{
 
 
 const VitaminPremixPage: React.FC = () => {
-    const [vitamins, setVitamins] = useState<Vitamin[]>(initialVitaminsData);
-    const [premixInclusionRate, setPremixInclusionRate] = useState<number>(2.5); // kg/ton
-    const [premixBatchSize, setPremixBatchSize] = useState<number>(100); // kg
+    const [vitamins, setVitamins] = useState<Vitamin[]>(() => {
+        const saved = localStorage.getItem('vitaminPremixData_v1');
+        return saved ? JSON.parse(saved) : initialVitaminsData;
+    });
+    const [premixInclusionRate, setPremixInclusionRate] = useState<number>(() => {
+        const saved = localStorage.getItem('vitaminInclusionRate_v1');
+        return saved ? JSON.parse(saved) : 2.5;
+    });
+    const [premixBatchSize, setPremixBatchSize] = useState<number>(() => {
+        const saved = localStorage.getItem('vitaminBatchSize_v1');
+        return saved ? JSON.parse(saved) : 100;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('vitaminPremixData_v1', JSON.stringify(vitamins));
+    }, [vitamins]);
+
+    useEffect(() => {
+        localStorage.setItem('vitaminInclusionRate_v1', JSON.stringify(premixInclusionRate));
+    }, [premixInclusionRate]);
+
+    useEffect(() => {
+        localStorage.setItem('vitaminBatchSize_v1', JSON.stringify(premixBatchSize));
+    }, [premixBatchSize]);
+    
+    const handleReset = () => {
+        if (window.confirm('Are you sure you want to reset all vitamin premix data to the application defaults?')) {
+            localStorage.removeItem('vitaminPremixData_v1');
+            localStorage.removeItem('vitaminInclusionRate_v1');
+            localStorage.removeItem('vitaminBatchSize_v1');
+            setVitamins(initialVitaminsData);
+            setPremixInclusionRate(2.5);
+            setPremixBatchSize(100);
+        }
+    };
+
 
     const handleVitaminChange = (id: string, field: keyof Vitamin, value: string) => {
         const numericValue = parseFloat(value);
@@ -71,7 +104,13 @@ const VitaminPremixPage: React.FC = () => {
             const totalRequiredLevelPerKgFeed = requiredInFeed / ((100 - (processingLossPct || 0)) / 100) / ((100 - (storageLossPct || 0)) / 100);
             const feedTreatedPerKgPremix = premixInclusionRate > 0 ? 1000 / premixInclusionRate : 0;
             const pureVitaminIn1kgPremix = totalRequiredLevelPerKgFeed * feedTreatedPerKgPremix;
+            
+            // Purity for IU vitamins is IU/g. For mg vitamins, it's mg/g.
+            // To get product amount in kg, we need to convert everything to a consistent unit.
+            // Let's use kg for weight and keep IU/mg for activity.
+            // purity is in (IU or mg)/g. purityPerKgProduct is (IU or mg)/kg.
             const purityPerKgProduct = purity * 1000;
+            
             const productPerKgPremix_kg = purityPerKgProduct > 0 ? pureVitaminIn1kgPremix / purityPerKgProduct : 0;
             const productAmountInBatch_kg = productPerKgPremix_kg * premixBatchSize;
             const costPerKgProduct = pricePerKg || 0;
@@ -106,7 +145,15 @@ const VitaminPremixPage: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-700 mb-4">Vitamin Premix Formulation</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-700">Vitamin Premix Formulation</h2>
+                    <button
+                        onClick={handleReset}
+                        className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm"
+                    >
+                        Reset Defaults
+                    </button>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-4 bg-gray-50 rounded-lg border">
                     <div>
@@ -151,7 +198,7 @@ const VitaminPremixPage: React.FC = () => {
                                         </div>
                                     </td>
                                      <td className="px-2 py-2">
-                                         <Tooltip text={`Pure vitamin concentration in the commercial product (${v.purityUnit})`}>
+                                         <Tooltip text={`Concentration of pure vitamin in the commercial product (${v.purityUnit})`}>
                                             <div className="flex items-center">
                                                 <EditableNumericCell initialValue={v.purity} onSave={value => handleVitaminChange(v.id, 'purity', value)} className="w-24 p-1 border rounded-md text-center" />
                                                 <span className="text-xs text-gray-500 ml-1">{v.purityUnit}</span>
@@ -170,14 +217,14 @@ const VitaminPremixPage: React.FC = () => {
             </div>
 
              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h3 className="text-xl font-bold text-gray-700 mb-4">Premix Composition Summary ({premixBatchSize} kg Batch)</h3>
+                <h3 className="text-xl font-bold text-gray-700 mb-4">Premix Formulation Summary ({premixBatchSize} kg Batch)</h3>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
                         <span className="font-medium text-gray-600">Total Vitamin Product Weight:</span>
                         <span className="font-bold text-lg text-gray-800">{calculations.totalProductWeight_kg.toFixed(3)} kg</span>
                     </div>
                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                        <span className="font-medium text-gray-600">Carrier Weight (Calcium Carbonate):</span>
+                        <span className="font-medium text-gray-600">Carrier Weight (e.g., Limestone):</span>
                         <span className="font-bold text-lg text-gray-800">{calculations.carrierWeight_kg.toFixed(3)} kg</span>
                     </div>
                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
@@ -189,7 +236,7 @@ const VitaminPremixPage: React.FC = () => {
                         <span className="font-bold text-lg text-green-700">${calculations.costPerKgPremix.toFixed(2)} / kg</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                        <span className="font-medium text-gray-600">Added Cost per ton of Feed:</span>
+                        <span className="font-medium text-gray-600">Added Cost per Ton of Feed:</span>
                         <span className="font-bold text-lg text-blue-800">${calculations.costPerTonFeed.toFixed(2)} / ton feed</span>
                     </div>
                 </div>

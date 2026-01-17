@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Ingredient, InclusionMode } from '../types';
-import { COLUMN_HEADERS_EN } from '../constants';
+import { COLUMN_HEADERS } from '../constants';
 import ConfirmationModal from './ConfirmationModal';
 
 interface IngredientTableProps {
@@ -49,10 +49,10 @@ const IngredientRow: React.FC<{
         const max = inclusionMode === 'percent' ? 100 : 1000;
 
         if (numericValue < 0) {
-            return "Value cannot be negative";
+            return "Cannot be negative";
         }
         if (numericValue > max) {
-            return `Max value for ingredient is ${max}`;
+            return `Max value for an ingredient is ${max}`;
         }
 
         const newPercentValue = inclusionMode === 'kg_per_ton' ? numericValue / 10 : numericValue;
@@ -60,7 +60,7 @@ const IngredientRow: React.FC<{
         const newTotalPct = otherIngredientsTotalPct + newPercentValue;
 
         if (newTotalPct > 100.001) { // Floating point tolerance
-            return `Total exceeds 100% (will be ${newTotalPct.toFixed(2)}%)`;
+            return `Total exceeds 100% (would be ${newTotalPct.toFixed(2)}%)`;
         }
         
         return null;
@@ -151,7 +151,7 @@ const IngredientTable: React.FC<IngredientTableProps> = ({ ingredients, onUpdate
     return ingredients.map((ing, index) => ({ ingredient: ing, originalIndex: index }));
   }, [ingredients]);
   
-  const inclusionHeader = inclusionMode === 'percent' ? COLUMN_HEADERS_EN['Inclusion_pct'] : 'Inclusion (kg/ton)';
+  const inclusionHeader = inclusionMode === 'percent' ? COLUMN_HEADERS['Inclusion_pct'] : 'Inclusion (kg/ton)';
 
   const handleRequestDelete = (ingredient: Ingredient) => {
     setDeletionCandidate(ingredient);
@@ -178,7 +178,7 @@ const IngredientTable: React.FC<IngredientTableProps> = ({ ingredients, onUpdate
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
               >
-                {COLUMN_HEADERS_EN['Name']}
+                {COLUMN_HEADERS['Name']}
               </th>
               <th
                 scope="col"

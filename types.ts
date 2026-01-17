@@ -1,4 +1,4 @@
-export type IngredientCategory = 'Energy' | 'Protein' | 'AminoAcids' | 'MineralSupplements' | 'Medicated' | 'Other';
+export type IngredientCategory = 'Energy' | 'Protein' | 'AminoAcids' | 'MineralSupplements' | 'Medicated' | 'Other' | 'Enzymes';
 export type InclusionMode = 'percent' | 'kg_per_ton';
 
 export interface Ingredient {
@@ -11,6 +11,7 @@ export interface Ingredient {
   ME_kcal_per_kg: number;
   Ca_pct: number;
   avP_pct: number;
+  phytateP_pct: number;
   Na_pct: number;
   K_pct: number;
   Cl_pct: number;
@@ -29,14 +30,17 @@ export interface Ingredient {
   Ash_pct: number;
   Choline_mg_per_kg: number;
   Price_USD_per_ton: number;
+  standard_dosage_g_per_ton?: number;
+  matrix?: Record<string, number>;
 }
 
-export interface MixAnalysisResult {
+export interface FeedAnalysisResult {
   totalInclusion: number;
   totalCostPerTon: number;
   totalCostPer100kg: number;
-  [key: string]: number | Record<string, number>;
   nutrients: Record<string, number>;
+  ingredients?: Ingredient[];
+  enzymeContributions?: Record<string, { name: string; contributions: Record<string, number> }>;
 }
 
 export type GrowthPhase = 'Starter' | 'Grower' | 'Finisher 1' | 'Finisher 2';
@@ -57,16 +61,6 @@ export enum Page {
   ANALYSIS = 'analysis',
   VITAMIN_PREMIX = 'vitamin_premix',
   MINERAL_PREMIX = 'mineral_premix',
-}
-
-export interface Enzyme {
-  id: string;
-  name: string;
-  dosage_g_per_ton: number; // The actual dosage used in the mix
-  standard_dosage_g_per_ton: number; // The dosage for which the matrix is defined
-  max_effective_dosage_g_per_ton: number; // The dosage at which the effect plateaus
-  Price_USD_per_ton: number;
-  matrix: Partial<Record<keyof Omit<Ingredient, 'id' | 'Name' | 'Inclusion_pct' | 'Price_USD_per_ton' | 'description' | 'category'>, number>>;
 }
 
 export type VitaminUnit = 'IU' | 'mg';

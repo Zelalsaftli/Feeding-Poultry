@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
-import type { Ingredient, Enzyme, InclusionMode } from '../types';
+import type { Ingredient, InclusionMode } from '../types';
 import IngredientTable from './IngredientTable';
-import EnzymeManager from './EnzymeManager';
 import { exportIngredientsToCSV, parseCSV } from '../services/csvService';
 
 interface InputPageProps {
@@ -11,15 +10,13 @@ interface InputPageProps {
   onAddIngredient: () => void;
   onDeleteIngredient: (id: number) => void;
   totalInclusion: number;
-  enzymes: Enzyme[];
-  onUpdateEnzyme: (enzyme: Enzyme) => void;
   inclusionMode: InclusionMode;
   setInclusionMode: (mode: InclusionMode) => void;
   runActionWithNormalizationCheck: (action: () => void) => void;
 }
 
 const InputPage: React.FC<InputPageProps> = ({ 
-  ingredients, setIngredients, onUpdateIngredient, onAddIngredient, onDeleteIngredient, totalInclusion, enzymes, onUpdateEnzyme, inclusionMode, setInclusionMode, runActionWithNormalizationCheck
+  ingredients, setIngredients, onUpdateIngredient, onAddIngredient, onDeleteIngredient, totalInclusion, inclusionMode, setInclusionMode, runActionWithNormalizationCheck
 }) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +51,7 @@ const InputPage: React.FC<InputPageProps> = ({
         if (text) {
             const importedIngredients = parseCSV(text);
             if (importedIngredients.length > 0) {
-                if (window.confirm(`Found ${importedIngredients.length} ingredients. This will replace the current ingredients in your feed. Do you want to proceed?`)) {
+                if (window.confirm(`Found ${importedIngredients.length} ingredients. This will replace the current ingredients in your feed. Proceed?`)) {
                    setIngredients(importedIngredients);
                 }
             }
@@ -95,7 +92,7 @@ const InputPage: React.FC<InputPageProps> = ({
                  <button
                     onClick={handleNormalize}
                     className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
-                    title={`Adjust all ingredients to reach ${target}${unit}`}
+                    title={`Adjust all ingredients to sum to ${target}${unit}`}
                 >
                     Balance to {target}
                 </button>
@@ -122,7 +119,7 @@ const InputPage: React.FC<InputPageProps> = ({
             {/* Sliding background */}
             <div
               className={`absolute top-0 left-0 h-full w-1/2 rounded-full bg-teal-600 shadow-md transition-transform duration-300 ease-in-out ${
-                inclusionMode === 'kg_per_ton' ? 'translate-x-full' : 'translate-x-0'
+                inclusionMode === 'percent' ? 'translate-x-0' : 'translate-x-full'
               }`}
             />
             {/* Buttons */}
@@ -154,14 +151,6 @@ const InputPage: React.FC<InputPageProps> = ({
         />
 
       </div>
-      
-      {enzymes.length > 0 && (
-        <EnzymeManager 
-          enzymes={enzymes} 
-          onUpdateEnzyme={onUpdateEnzyme}
-        />
-      )}
-
     </div>
   );
 };
