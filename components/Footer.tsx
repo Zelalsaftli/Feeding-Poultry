@@ -4,25 +4,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-white mt-8 py-6 border-t no-print">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-700">
-        
-        <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Prepared by</h3>
-            <p className="font-semibold text-gray-700 text-lg">
-                Manar Salem - Ruaa Dbyat - Lujain Shaheen
-            </p>
-        </div>
-
-        <div className="w-1/4 mx-auto border-t border-gray-300 my-6"></div>
-
-        <div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Supervised by</h3>
-          <div className="flex justify-center items-center gap-x-4 gap-y-2">
-            <p className="font-semibold text-amber-700 text-lg">Dr. Zelal Alsaftli & Batoul Almer Suliman</p>
-          </div>
-          <p className="text-sm text-gray-600 mt-2">Department of Animal Production - Faculty of Agricultural Engineering - Hama University</p>
-        </div>
-
-        <div className="mt-8 pt-4 border-t border-gray-200">
+        <div className="pt-4">
           <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-4 text-sm text-gray-600">
             <div className="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">

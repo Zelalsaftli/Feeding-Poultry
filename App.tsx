@@ -10,6 +10,7 @@ import MineralPremixPage from './components/MineralPremixPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import InclusionConfirmationModal from './components/InclusionConfirmationModal';
+import SplashScreen from './components/SplashScreen';
 import { initialIngredients, ANALYSIS_RESULTS, NUTRIENT_UNITS } from './constants';
 
 const defaultNutrientVisibility = Object.keys(ANALYSIS_RESULTS).reduce((acc, key) => {
@@ -24,6 +25,7 @@ const defaultNutrientUnits = Object.keys(NUTRIENT_UNITS).reduce((acc, key) => {
 
 
 const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>(Page.SELECTION);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
@@ -128,6 +130,10 @@ const App: React.FC = () => {
       navigateAction();
     }
   }, [currentPage, runActionWithNormalizationCheck]);
+  
+  const handleGoHome = () => {
+    setShowSplash(true);
+  };
 
   const handleNormalize = () => {
     const totalInclusion = analysisResult.totalInclusion;
@@ -331,8 +337,12 @@ const App: React.FC = () => {
     }
   };
 
+  if (showSplash) {
+    return <SplashScreen onStart={() => setShowSplash(false)} />;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-100 flex flex-col fade-in">
       {isLoadingAnalysis && (
         <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center z-50 no-print">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-600"></div>
@@ -349,6 +359,7 @@ const App: React.FC = () => {
       <Header 
         currentPage={currentPage}
         onNavigate={handleNavigate}
+        onGoHome={handleGoHome}
       />
       <main className={`flex-grow container mx-auto p-4 sm:p-6 lg:p-8 page-container ${animationClass}`}>
         {renderPage()}
