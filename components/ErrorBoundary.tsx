@@ -23,7 +23,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   // FIX: Using an arrow function for handleReset automatically binds `this`, fixing the issue where `this.props` and `this.setState` were not accessible.
-  handleReset = () => {
+  public handleReset = (): void => {
     this.props.onReset();
     this.setState({ hasError: false });
   };

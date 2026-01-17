@@ -4,6 +4,8 @@
 
 
 
+
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Ingredient, FeedAnalysisResult, GrowthPhase, InclusionMode, RecommendationOverrides } from './types';
 import { Page } from './types';
@@ -149,12 +151,10 @@ const App: React.FC = () => {
     setMasterIngredients(initialIngredients);
   }, []);
 
-  // FIX: Fix state mutation by creating new objects instead of modifying existing ones.
-  // This helps prevent type inference issues where an object's type might become 'unknown'.
   const handleMergeMasterIngredients = useCallback((newIngredients: Ingredient[]) => {
     setMasterIngredients(prev => {
         const existingMap = new Map(prev.map(i => [i.Name.toLowerCase(), i]));
-        // FIX: Removed explicit type annotation on `newIng` to allow TypeScript to correctly infer its type from `newIngredients` within the `useCallback` hook, resolving the spread operator error.
+        // FIX: The `newIng` parameter was being inferred as `unknown`, causing errors with the spread operator. Removing the explicit type annotation allows TypeScript to correctly infer its type from `newIngredients`.
         newIngredients.forEach(newIng => {
             const existing = existingMap.get(newIng.Name.toLowerCase());
             if (existing) {

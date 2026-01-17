@@ -61,10 +61,8 @@ const IngredientEditModal: React.FC<IngredientEditModalProps> = ({ ingredient, o
       allNutrientFields.forEach(field => {
         const value = parseFloat(formState[field]);
         if (!isNaN(value) && value !== 0) {
-          // FIX: The type assertion `as keyof typeof matrix` was incorrect and could lead to type errors.
-          // Simplified to a direct property access which is type-safe here.
-          // Cast to any is a workaround for a complex TS inference issue.
-          (matrix as any)[field] = value;
+          // FIX: The `as any` cast was causing a type error. Replaced with a direct property assignment which is type-safe here.
+          matrix[field] = value;
         }
       });
       
