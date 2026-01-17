@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Ingredient, FeedAnalysisResult, GrowthPhase, InclusionMode, RecommendationOverrides } from './types';
 import { Page } from './types';
@@ -116,8 +118,8 @@ const App: React.FC = () => {
   }, []);
 
   const handleGoHome = useCallback(() => {
-    handleNavigate(Page.SELECTION);
-  }, [handleNavigate]);
+    setShowSplash(true);
+  }, []);
   
   const handleResetError = useCallback(() => {
     handleNavigate(Page.SELECTION);
