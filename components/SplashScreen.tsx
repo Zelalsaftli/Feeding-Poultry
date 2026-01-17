@@ -5,40 +5,32 @@ interface SplashScreenProps {
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
   return (
     <div className="fixed inset-0 bg-gray-100 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 sm:p-12 text-center w-full max-w-3xl transform transition-all duration-500 ease-in-out animate-fadeInUp">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-teal-600 mb-6">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-teal-600 mb-8">
           Poultry Feed Formulation App
         </h1>
-        
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-3">Prepared by</h2>
-          <p className="font-semibold text-gray-700 text-xl">
+
+        <div className="space-y-8 mb-10">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Prepared by</h2>
+            <p className="font-semibold text-gray-700 text-lg">
               Manar Salem - Ruaa Dbyat - Lujain Shaheen
-          </p>
+            </p>
+          </div>
+          
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Supervised by</h2>
+            <p className="font-semibold text-amber-700 text-lg">
+                Dr. Zelal Alsaftli & Eng. Batoul Almer Suliman
+            </p>
+          </div>
         </div>
 
-        <div className="w-1/3 mx-auto border-t border-gray-300 my-8"></div>
-
-        <div className="mb-10">
-          <h2 className="text-xl font-bold text-gray-800 mb-3">Supervised by</h2>
-          <p className="font-semibold text-amber-700 text-xl">
-            Dr. Zelal Alsaftli & Eng. Batoul Almer Suliman
-          </p>
-          <p className="text-md text-gray-600 mt-4">
-            Animal Production Department  - Agricultural Engineering Faculty - Hama University
-          </p>
-        </div>
-
-        <p className="text-md text-gray-500 mb-8 font-mono">{formattedDate}</p>
+        <p className="text-md text-gray-600 mt-4 mb-10">
+          Animal Production Department - Agricultural Engineering Faculty - Hama University
+        </p>
 
         <button
           onClick={onStart}

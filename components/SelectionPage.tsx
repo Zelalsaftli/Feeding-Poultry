@@ -327,9 +327,10 @@ const SelectionPage: React.FC<SelectionPageProps> = ({
 
       {editingIngredient && (
         <IngredientEditModal
-          ingredient={editingIngredient}
-          onSave={handleSaveIngredient}
-          onClose={() => setEditingIngredient(null)}
+            ingredient={editingIngredient}
+            isNew={!masterIngredients.some(i => i.id === editingIngredient.id)}
+            onSave={handleSaveIngredient}
+            onClose={() => setEditingIngredient(null)}
         />
       )}
 

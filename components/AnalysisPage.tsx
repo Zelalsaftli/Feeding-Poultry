@@ -3,6 +3,7 @@ import type { FeedAnalysisResult, GrowthPhase, AviagenRecommendation, Recommenda
 import { ANALYSIS_RESULTS, ROSS_308_RECOMMENDATIONS, NUTRIENT_UNITS, convertValue } from '../constants';
 import NutrientVisibilityModal from './NutrientVisibilityModal';
 import NutrientRadarChart from './NutrientRadarChart';
+import EnzymeContributionSummary from './EnzymeContributionSummary';
 
 interface AnalysisPageProps {
   results: FeedAnalysisResult;
@@ -233,6 +234,7 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ results, growthPhase, setGr
   const [isChartExpanded, setIsChartExpanded] = useState(true);
   const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(true);
   const [isNutrientProfileExpanded, setIsNutrientProfileExpanded] = useState(true);
+  const [isEnzymeExpanded, setIsEnzymeExpanded] = useState(true);
   const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
 
   const activeRecommendations = useMemo(() => {
@@ -403,6 +405,23 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ results, growthPhase, setGr
                         })}
                     </tbody>
                 </table>
+            </div>
+        )}
+      </div>
+
+      {/* Enzyme Contributions */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <button onClick={() => setIsEnzymeExpanded(!isEnzymeExpanded)} className="w-full text-left mb-2">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-700">Enzyme Contributions</h3>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-500 transform transition-transform ${isEnzymeExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </button>
+        {isEnzymeExpanded && (
+            <div className="mt-4">
+                <EnzymeContributionSummary enzymeContributions={results.enzymeContributions} />
             </div>
         )}
       </div>

@@ -145,14 +145,22 @@ const VitaminPremixPage: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
                     <h2 className="text-2xl font-bold text-gray-700">Vitamin Premix Formulation</h2>
-                    <button
-                        onClick={handleReset}
-                        className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm"
-                    >
-                        Reset Defaults
-                    </button>
+                    <div className="flex items-center gap-2 no-print">
+                        <button
+                            onClick={() => window.print()}
+                            className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm"
+                        >
+                            Print Premix
+                        </button>
+                        <button
+                            onClick={handleReset}
+                            className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm"
+                        >
+                            Reset Defaults
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-4 bg-gray-50 rounded-lg border">

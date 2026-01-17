@@ -1,5 +1,5 @@
 {
   "name": "Poultry Feed Formulation App",
-  "description": "An interactive web app for formulating and analyzing poultry feeds.",
+  "description": "An interactive web app for calculating and analyzing poultry feed.",
   "requestFramePermissions": []
 }

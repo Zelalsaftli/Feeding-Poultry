@@ -1,3 +1,7 @@
+
+
+
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Ingredient, FeedAnalysisResult, GrowthPhase, InclusionMode, RecommendationOverrides } from './types';
 import { Page } from './types';
@@ -11,6 +15,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import InclusionConfirmationModal from './components/InclusionConfirmationModal';
 import SplashScreen from './components/SplashScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import { initialIngredients, ANALYSIS_RESULTS, NUTRIENT_UNITS } from './constants';
 
 const defaultNutrientVisibility = Object.keys(ANALYSIS_RESULTS).reduce((acc, key) => {
@@ -98,149 +103,81 @@ const App: React.FC = () => {
         setIsLoadingAnalysis(false);
     }, 50);
 
+    // FIX: Correctly close the useEffect hook that was truncated.
     return () => clearTimeout(timer);
   }, [ingredients]);
 
-  const performNavigation = (page: Page) => {
+  const handleNavigate = useCallback((page: Page) => {
     setAnimationClass('fade-out');
     setTimeout(() => {
       setCurrentPage(page);
       setAnimationClass('fade-in');
-    }, 200);
-  };
+    }, 300);
+  }, []);
+
+  const handleGoHome = useCallback(() => {
+    handleNavigate(Page.SELECTION);
+  }, [handleNavigate]);
   
-  const runActionWithNormalizationCheck = useCallback((action: () => void) => {
-    const totalInclusion = analysisResult.totalInclusion;
-    if (Math.abs(100 - totalInclusion) > 0.1) {
-      setPendingAction(() => action);
-      setIsNormalizationModalOpen(true);
-    } else {
-      action();
-    }
-  }, [analysisResult.totalInclusion]);
+  const handleResetError = useCallback(() => {
+    handleNavigate(Page.SELECTION);
+  }, [handleNavigate]);
 
-  const handleNavigate = useCallback((page: Page) => {
-    if (page === currentPage) return;
+  const handleProceed = useCallback((selectedIds: number[]) => {
+    const selectedIngredients = masterIngredients
+      .filter(ing => selectedIds.includes(ing.id))
+      .map(ing => ({ ...ing, Inclusion_pct: ing.Inclusion_pct || 0 }));
 
-    const navigateAction = () => performNavigation(page);
+    const currentIngredientsMap = new Map(ingredients.map(i => [i.id, i]));
+    const newIngredients = selectedIngredients.map(s => currentIngredientsMap.get(s.id) || s);
 
-    if (currentPage === Page.INPUT && page === Page.ANALYSIS) {
-      runActionWithNormalizationCheck(navigateAction);
-    } else {
-      navigateAction();
-    }
-  }, [currentPage, runActionWithNormalizationCheck]);
-  
-  const handleGoHome = () => {
-    setShowSplash(true);
-  };
-
-  const handleNormalize = () => {
-    const totalInclusion = analysisResult.totalInclusion;
-    if (totalInclusion === 0) return;
-    const factor = 100 / totalInclusion;
-    const newIngredients = ingredients.map(ing => ({
-      ...ing,
-      Inclusion_pct: ing.Inclusion_pct * factor,
-    }));
     setIngredients(newIngredients);
-  };
+    handleNavigate(Page.INPUT);
+  }, [masterIngredients, ingredients, handleNavigate]);
 
-  const handleModalClose = () => {
-    setIsNormalizationModalOpen(false);
-    setPendingAction(null);
-  };
-
-  const handleModalProceedAnyway = () => {
-    if (pendingAction) {
-      pendingAction();
-    }
-    handleModalClose();
-  };
-
-  const handleModalNormalizeAndProceed = () => {
-    handleNormalize();
-    setTimeout(() => {
-      if (pendingAction) {
-        pendingAction();
-      }
-    }, 100);
-    handleModalClose();
-  };
-  
-  const handleProceedToInput = useCallback((selectedIngredientIds: number[]) => {
-      const selectedMasterIngredients = masterIngredients.filter(ing => selectedIngredientIds.includes(ing.id));
-      const newRecipeIngredients = selectedMasterIngredients.map(masterIng => {
-          const existingIng = ingredients.find(i => i.id === masterIng.id);
-          return existingIng || { ...masterIng, Inclusion_pct: 0 };
-      });
-      setIngredients(newRecipeIngredients);
-      handleNavigate(Page.INPUT);
-  }, [ingredients, masterIngredients, handleNavigate]);
-  
-  const handleAddMasterIngredient = useCallback((newIngredient: Ingredient) => {
-    setMasterIngredients(prev => [...prev, { ...newIngredient, id: Date.now() }]);
+  const handleAddMasterIngredient = useCallback((ingredient: Ingredient) => {
+    setMasterIngredients(prev => [...prev, ingredient]);
   }, []);
 
   const handleUpdateMasterIngredient = useCallback((updatedIngredient: Ingredient) => {
-    setMasterIngredients(prev => 
-      prev.map(ing => (ing.id === updatedIngredient.id ? updatedIngredient : ing))
-    );
+    setMasterIngredients(prev => prev.map(ing => ing.id === updatedIngredient.id ? updatedIngredient : ing));
   }, []);
 
   const handleResetMasterIngredients = useCallback(() => {
     setMasterIngredients(initialIngredients);
-    alert('Restored default ingredient database.');
   }, []);
 
-  const handleMergeMasterIngredients = useCallback((importedIngredients: Ingredient[]) => {
-    if (!importedIngredients || importedIngredients.length === 0) {
-      alert('No valid ingredients found in the file.');
-      return;
-    }
-
-    setMasterIngredients(prevMasterIngredients => {
-      const newMasterIngredients = [...prevMasterIngredients];
-      const existingIngredientsMap = new Map(newMasterIngredients.map(ing => [ing.Name.toLowerCase().trim(), ing]));
-      
-      let updatedCount = 0;
-      let addedCount = 0;
-
-      importedIngredients.forEach(importedIng => {
-        if (!importedIng || typeof importedIng.Name !== 'string') {
-          return;
-        }
-
-        const existingIng = existingIngredientsMap.get(importedIng.Name.toLowerCase().trim());
-        
-        if (existingIng) {
-          const updatedIng = { ...existingIng, ...importedIng, id: existingIng.id };
-          const index = newMasterIngredients.findIndex(ing => ing.id === existingIng.id);
-          if (index !== -1) {
-            newMasterIngredients[index] = updatedIng;
-            updatedCount++;
-          }
-        } else {
-          newMasterIngredients.push({
-            ...importedIng,
-            id: Date.now() + Math.random(),
-          });
-          addedCount++;
-        }
-      });
-      
-      alert(`Import complete. ${updatedCount} ingredients updated, ${addedCount} new ingredients added.`);
-      return newMasterIngredients;
+  // FIX: Fix state mutation by creating new objects instead of modifying existing ones.
+  // This helps prevent type inference issues where an object's type might become 'unknown'.
+  const handleMergeMasterIngredients = useCallback((newIngredients: Ingredient[]) => {
+    setMasterIngredients(prev => {
+        const existingMap = new Map(prev.map(i => [i.Name.toLowerCase(), i]));
+        // FIX: Removed explicit type annotation on `newIng` to allow TypeScript to correctly infer its type from `newIngredients` within the `useCallback` hook, resolving the spread operator error.
+        newIngredients.forEach(newIng => {
+            const existing = existingMap.get(newIng.Name.toLowerCase());
+            if (existing) {
+                const updatedIngredient = { ...existing, ...newIng, id: existing.id }; // Preserve original ID
+                existingMap.set(newIng.Name.toLowerCase(), updatedIngredient);
+            } else {
+                const newIngredient = { ...newIng, id: Date.now() + Math.random() };
+                existingMap.set(newIng.Name.toLowerCase(), newIngredient);
+            }
+        });
+        return Array.from(existingMap.values());
     });
   }, []);
 
-  const handleUpdateIngredient = useCallback((index: number, field: keyof Ingredient, value: number | string) => {
+  const handleUpdateIngredient = useCallback((index: number, field: keyof Ingredient, value: string | number) => {
     setIngredients(prev => {
-      const newIngredients = [...prev];
-      const ingredient = { ...newIngredients[index] };
-      (ingredient[field] as number | string) = value;
-      newIngredients[index] = ingredient;
-      return newIngredients;
+        const newIngredients = [...prev];
+        const ingredientToUpdate = { ...newIngredients[index] };
+        if (typeof value === 'string' && !['Name', 'description', 'category'].includes(field)) {
+            (ingredientToUpdate as any)[field] = parseFloat(value) || 0;
+        } else {
+            (ingredientToUpdate as any)[field] = value;
+        }
+        newIngredients[index] = ingredientToUpdate;
+        return newIngredients;
     });
   }, []);
   
@@ -258,23 +195,62 @@ const App: React.FC = () => {
   const handleDeleteIngredient = useCallback((id: number) => {
     setIngredients(prev => prev.filter(ing => ing.id !== id));
   }, []);
+  
+  const runActionWithNormalizationCheck = useCallback((action: () => void) => {
+      const total = analysisResult.totalInclusion;
+      if (Math.abs(100 - total) > 0.01 && total > 0) {
+          setIsNormalizationModalOpen(true);
+          setPendingAction(() => action);
+      } else {
+          action();
+      }
+  }, [analysisResult.totalInclusion]);
+
+  const handleNormalizeAndProceed = useCallback(() => {
+    if (pendingAction) {
+        const total = analysisResult.totalInclusion;
+        if (total > 0) {
+            const factor = 100 / total;
+            const normalizedIngredients = ingredients.map(ing => ({
+                ...ing,
+                Inclusion_pct: ing.Inclusion_pct * factor,
+            }));
+            setIngredients(normalizedIngredients);
+            
+            // Execute the original action after state has had a chance to update
+            // Using a timeout to allow re-calculation to happen based on new ingredients
+            setTimeout(() => pendingAction(), 100); 
+
+        } else {
+            pendingAction();
+        }
+    }
+    setIsNormalizationModalOpen(false);
+    setPendingAction(null);
+  }, [pendingAction, analysisResult.totalInclusion, ingredients]);
+  
+  const handleProceedAnyway = useCallback(() => {
+      if (pendingAction) {
+          pendingAction();
+      }
+      setIsNormalizationModalOpen(false);
+      setPendingAction(null);
+  }, [pendingAction]);
 
   const handleUpdateOverride = useCallback((key: string, values: { min: number; max: number } | null) => {
     setRecommendationOverrides(prev => {
-      const newOverrides = { ...prev };
-      if (values === null) {
-        delete newOverrides[key]; // This reverts to default
-      } else {
-        newOverrides[key] = values;
-      }
-      return newOverrides;
+        const newOverrides = { ...prev };
+        if (values === null) {
+            delete newOverrides[key];
+        } else {
+            newOverrides[key] = values;
+        }
+        return newOverrides;
     });
   }, []);
 
   const handleResetAllOverrides = useCallback(() => {
-    if (window.confirm('Are you sure you want to reset all recommendations to Aviagen defaults?')) {
-      setRecommendationOverrides({});
-    }
+    setRecommendationOverrides({});
   }, []);
 
   const handleUpdateNutrientVisibility = useCallback((newVisibility: Record<string, boolean>) => {
@@ -284,56 +260,51 @@ const App: React.FC = () => {
   const handleUpdateNutrientUnit = useCallback((key: string, unit: string) => {
     setNutrientUnits(prev => ({ ...prev, [key]: unit }));
   }, []);
-  
+
+
   const renderPage = () => {
-    switch(currentPage) {
+    switch (currentPage) {
       case Page.SELECTION:
-        return (
-          <SelectionPage 
-            masterIngredients={masterIngredients}
-            recipeIngredients={ingredients}
-            onProceed={handleProceedToInput}
-            onAddMasterIngredient={handleAddMasterIngredient}
-            onUpdateMasterIngredient={handleUpdateMasterIngredient}
-            onResetMasterIngredients={handleResetMasterIngredients}
-            onMergeMasterIngredients={handleMergeMasterIngredients}
-          />
-        );
+        return <SelectionPage
+          masterIngredients={masterIngredients}
+          recipeIngredients={ingredients}
+          onProceed={handleProceed}
+          onAddMasterIngredient={handleAddMasterIngredient}
+          onUpdateMasterIngredient={handleUpdateMasterIngredient}
+          onResetMasterIngredients={handleResetMasterIngredients}
+          onMergeMasterIngredients={handleMergeMasterIngredients}
+        />;
       case Page.INPUT:
-        return (
-          <InputPage
-            ingredients={ingredients}
-            setIngredients={setIngredients}
-            onUpdateIngredient={handleUpdateIngredient}
-            onAddIngredient={handleAddIngredient}
-            onDeleteIngredient={handleDeleteIngredient}
-            totalInclusion={analysisResult.totalInclusion}
-            inclusionMode={inclusionMode}
-            setInclusionMode={setInclusionMode}
-            runActionWithNormalizationCheck={runActionWithNormalizationCheck}
-          />
-        );
+        return <InputPage
+          ingredients={ingredients}
+          setIngredients={setIngredients}
+          onUpdateIngredient={handleUpdateIngredient}
+          onAddIngredient={handleAddIngredient}
+          onDeleteIngredient={handleDeleteIngredient}
+          totalInclusion={analysisResult.totalInclusion}
+          inclusionMode={inclusionMode}
+          setInclusionMode={setInclusionMode}
+          runActionWithNormalizationCheck={runActionWithNormalizationCheck}
+        />;
       case Page.ANALYSIS:
-        return (
-          <AnalysisPage 
-            results={analysisResult} 
-            growthPhase={growthPhase}
-            setGrowthPhase={setGrowthPhase}
-            recommendationOverrides={recommendationOverrides}
-            onUpdateOverride={handleUpdateOverride}
-            onResetAllOverrides={handleResetAllOverrides}
-            nutrientVisibility={nutrientVisibility}
-            onUpdateNutrientVisibility={handleUpdateNutrientVisibility}
-            nutrientUnits={nutrientUnits}
-            onUpdateNutrientUnit={handleUpdateNutrientUnit}
-          />
-        );
+        return <AnalysisPage
+          results={analysisResult}
+          growthPhase={growthPhase}
+          setGrowthPhase={setGrowthPhase}
+          recommendationOverrides={recommendationOverrides}
+          onUpdateOverride={handleUpdateOverride}
+          onResetAllOverrides={handleResetAllOverrides}
+          nutrientVisibility={nutrientVisibility}
+          onUpdateNutrientVisibility={handleUpdateNutrientVisibility}
+          nutrientUnits={nutrientUnits}
+          onUpdateNutrientUnit={handleUpdateNutrientUnit}
+        />;
       case Page.VITAMIN_PREMIX:
         return <VitaminPremixPage />;
       case Page.MINERAL_PREMIX:
         return <MineralPremixPage />;
       default:
-        return null;
+        return <p>Page not found</p>;
     }
   };
 
@@ -342,29 +313,28 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col fade-in">
-      {isLoadingAnalysis && (
-        <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center z-50 no-print">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-600"></div>
-            <p className="mt-4 text-lg text-gray-800 font-semibold">Calculating analysis...</p>
-        </div>
-      )}
-      <InclusionConfirmationModal
-        isOpen={isNormalizationModalOpen}
-        onClose={handleModalClose}
-        onNormalizeAndProceed={handleModalNormalizeAndProceed}
-        onProceedAnyway={handleModalProceedAnyway}
-        totalInclusion={analysisResult.totalInclusion}
-      />
+    <div className="bg-gray-100 min-h-screen flex flex-col font-sans">
       <Header 
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
+        currentPage={currentPage} 
+        onNavigate={handleNavigate} 
         onGoHome={handleGoHome}
       />
-      <main className={`flex-grow container mx-auto p-4 sm:p-6 lg:p-8 page-container ${animationClass}`}>
-        {renderPage()}
+      <main className={`container mx-auto p-4 sm:p-6 lg:p-8 flex-grow transition-opacity duration-300 ${animationClass}`}>
+        <ErrorBoundary onReset={handleResetError}>
+          {renderPage()}
+        </ErrorBoundary>
       </main>
       <Footer />
+      <InclusionConfirmationModal
+        isOpen={isNormalizationModalOpen}
+        onClose={() => {
+          setIsNormalizationModalOpen(false);
+          setPendingAction(null);
+        }}
+        onNormalizeAndProceed={handleNormalizeAndProceed}
+        onProceedAnyway={handleProceedAnyway}
+        totalInclusion={analysisResult.totalInclusion}
+      />
     </div>
   );
 };
